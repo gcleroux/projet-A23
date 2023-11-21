@@ -43,6 +43,14 @@ func InstallDeps() error {
 	return cmd.Run()
 }
 
+// Running tests
+func Test() error {
+	fmt.Println("Testing code...")
+	cmd := exec.Command("go", "test", "-coverpkg=./pkg/...", "./pkg/...")
+	cmd.Stdout = os.Stdout
+	return cmd.Run()
+}
+
 // Cleaning up
 func Clean() {
 	fmt.Println("Cleaning...")

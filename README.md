@@ -56,3 +56,12 @@ Le service sera disponible à l'adresse `http://localhost:8080`
 
 Vous pouvez tester l'API avec l'outil `http` disponible dans l'environnement
 de développpement. Pour plus d'infos, voir [cette page](./docs/REST.md) dans la docs.
+
+### Test
+
+Nous avons des tests pour le module `log`, si vous voulez exécuter les tests,
+faites la commande suivante:
+
+```bash
+mage test
+```
