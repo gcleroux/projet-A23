@@ -1,2 +1,4 @@
 .direnv
-bin
+log
+client
+server

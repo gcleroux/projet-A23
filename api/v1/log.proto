@@ -2,7 +2,23 @@ syntax = "proto3";
 
 package log.v1;
 
-option go_package = "github.com/gcleroux/projet-ift604/api/log_v1";
+option go_package = "github.com/gcleroux/projet-ift605/api/log_v1";
+
+service Log {
+    // Endpoints declaration
+    rpc Write(WriteRequest) returns (WriteResponse) {}
+    rpc Read(ReadRequest) returns (ReadResponse) {}
+    rpc ReadStream(ReadRequest) returns (stream ReadResponse) {}
+    rpc WriteStream(stream WriteRequest) returns (stream WriteResponse) {}
+}
+
+message WriteRequest { Record record = 1; }
+
+message WriteResponse { uint64 offset = 1; }
+
+message ReadRequest { uint64 offset = 1; }
+
+message ReadResponse { Record record = 1; }
 
 message Record {
     bytes value = 1;

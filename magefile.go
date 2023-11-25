@@ -13,11 +13,28 @@ import (
 )
 
 // Building the application
-func Build() error {
+func Build() {
+	mg.Deps(BuildServer)
+	mg.Deps(BuildClient)
+}
+
+// Build the gRPC server
+func BuildServer() error {
 	mg.Deps(InstallDeps)
 	mg.Deps(Compile)
-	fmt.Println("Building...")
-	cmd := exec.Command("go", "build", "-o", "bin/main", ".")
+	mg.Deps(CompileGateway)
+	fmt.Println("Building Server...")
+	cmd := exec.Command("go", "build", "-o", "server", "./cmd/server-cli")
+	return cmd.Run()
+}
+
+// Build the gRPC client
+func BuildClient() error {
+	mg.Deps(InstallDeps)
+	mg.Deps(Compile)
+	mg.Deps(CompileGateway)
+	fmt.Println("Building Client...")
+	cmd := exec.Command("go", "build", "-o", "client", "./cmd/client-cli")
 	return cmd.Run()
 }
 
@@ -31,7 +48,33 @@ func Compile() error {
 	if len(protoFiles) == 0 {
 		return fmt.Errorf("no .proto files found in api/v1")
 	}
-	args := append([]string{"--go_out=.", "--go_opt=paths=source_relative", "--proto_path=."}, protoFiles...)
+	args := append([]string{
+		"--go_out=.",
+		"--go-grpc_out=.",
+		"--go_opt=paths=source_relative",
+		"--go-grpc_opt=paths=source_relative",
+		"--proto_path=.",
+	}, protoFiles...)
+	cmd := exec.Command("protoc", args...)
+	return cmd.Run()
+}
+
+// Compiling protobuf gateway
+func CompileGateway() error {
+	fmt.Println("Compiling gRPC Gateway")
+	protoFiles, err := filepath.Glob("api/v1/*.proto")
+	if err != nil {
+		return err
+	}
+	if len(protoFiles) == 0 {
+		return fmt.Errorf("no .proto files found in api/v1")
+	}
+	args := append([]string{
+		"-I=.",
+		"--grpc-gateway_out=.",
+		"--grpc-gateway_opt=paths=source_relative",
+		"--grpc-gateway_opt=generate_unbound_methods=true",
+	}, protoFiles...)
 	cmd := exec.Command("protoc", args...)
 	return cmd.Run()
 }
@@ -48,11 +91,14 @@ func Test() error {
 	fmt.Println("Testing code...")
 	cmd := exec.Command("go", "test", "-coverpkg=./pkg/...", "./pkg/...")
 	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
 
 // Cleaning up
 func Clean() {
 	fmt.Println("Cleaning...")
-	os.RemoveAll("bin")
+	os.RemoveAll("./log")
+	os.RemoveAll("./server")
+	os.RemoveAll("./client")
 }

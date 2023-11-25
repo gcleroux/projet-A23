@@ -10,7 +10,7 @@ import (
 )
 
 func TestSegment(t *testing.T) {
-	dir, err := os.MkdirTemp(os.TempDir(), "segments")
+	dir, err := os.MkdirTemp(os.TempDir(), "segment-test")
 	require.NoError(t, err)
 	defer os.RemoveAll(dir)
 

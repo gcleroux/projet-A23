@@ -10,10 +10,12 @@
         buildDeps = with pkgs; [ git go gnumake ];
         devDeps = with pkgs;
           buildDeps ++ [
+            delve
             golangci-lint
             gopls
             gotestsum
             gotools
+            grpc-gateway
             httpie
             mage
             protobuf

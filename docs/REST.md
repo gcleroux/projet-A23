@@ -19,15 +19,19 @@ Pour faire une requête, le service s'attend à un JSON de ce format:
 ```json
 {
   "record": {
-    "value": <Base64 encoded string>
+    "value": "SGVsbG8sIFdvcmxkIQo="
   }
 }
 ```
 
+Le champ `value` peut vous sembler innatendu. Comme nous sauvegardons les
+messages en binaire directement sur le disque, nous avons besoin
+d'encoder les strings en `base64` avant de les envoyer à l'API.
+
 Exemple:
 
 ```bash
-http POST localhost:8080 "record[value]=$(echo <VOTRE_MESSAGE> | base64)"
+http POST localhost:8080 "record[value]=$(echo Hello, World! | base64)"
 ```
 
 - GET: `http://localhost:8080/`
@@ -39,7 +43,7 @@ Get s'attend à un JSON de ce format lors de la requête:
 
 ```json
 {
-  "offset": <int>
+  "offset": 0
 }
 ```
 
