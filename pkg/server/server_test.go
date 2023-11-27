@@ -43,7 +43,17 @@ func setupTest(t *testing.T, fn func(*Config)) (client api.LogClient, cfg *Confi
 	dir, err := os.MkdirTemp(os.TempDir(), "server-test")
 	require.NoError(t, err)
 
-	clog, err := log.NewLog(dir, log.Config{})
+	clog, err := log.NewLog(dir, log.Config{
+		Segment: struct {
+			MaxStoreBytes uint64
+			MaxIndexBytes uint64
+			InitialOffset uint64
+		}{
+			MaxStoreBytes: 1024,
+			MaxIndexBytes: 1024,
+			InitialOffset: 0,
+		},
+	})
 	require.NoError(t, err)
 
 	cfg = &Config{

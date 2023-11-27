@@ -27,6 +27,7 @@ func TestLog(t *testing.T) {
 
 			c := Config{}
 			c.Segment.MaxStoreBytes = 32
+			c.Segment.MaxIndexBytes = 1024
 			log, err := NewLog(dir, c)
 			require.NoError(t, err)
 

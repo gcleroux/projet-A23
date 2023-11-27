@@ -1,6 +1,7 @@
 package log
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path"
@@ -26,11 +27,11 @@ type Log struct {
 }
 
 func NewLog(dir string, c Config) (*Log, error) {
-	if c.Segment.MaxStoreBytes == 0 {
-		c.Segment.MaxStoreBytes = 1024
+	if c.Segment.MaxStoreBytes < lenWidth {
+		return nil, fmt.Errorf("MaxStoreBytes=%d, can't be < %d", c.Segment.MaxStoreBytes, lenWidth)
 	}
-	if c.Segment.MaxIndexBytes == 0 {
-		c.Segment.MaxIndexBytes = 1024
+	if c.Segment.MaxIndexBytes < entryWidth {
+		return nil, fmt.Errorf("MaxIndexBytes=%d, can't be < %d", c.Segment.MaxIndexBytes, entryWidth)
 	}
 	l := &Log{
 		Dir:    dir,

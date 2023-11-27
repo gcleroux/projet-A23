@@ -27,11 +27,11 @@ dépendences suivantes:
 
 - `go >= 1.20`
 - `kuberbernetes >= 1.16`
+- `mage`
 - `protoc`
 - `protoc-gen-go`
+- `protoc-gen-go-grpc`
 - `grpc-gateway`
-- `mage`
-- `httpie`
 
 ## Utilisation
 
@@ -66,15 +66,27 @@ précédente:
 
 ```bash
 # Partir le serveur gRPC
-exec server
+./server
+```
+
+Pour avoir plus d'info sur les options offertes par le serveur, faites la commande:
+
+```bash
+./server -h
 ```
 
 ```bash
 # Partir le client REST
-exec client
+./client
 ```
 
-Le service sera disponible à l'adresse `http://localhost:8080`
+Pour avoir plus d'info sur les options offertes par le client, faites la commande:
+
+```bash
+./client -h
+```
+
+Le client sera disponible à l'adresse `http://localhost:8080`
 
 Vous pouvez tester l'API avec l'outil `http` disponible dans l'environnement
 de développpement. Pour plus d'infos, voir [cette page](./docs/REST.md) dans la docs.

@@ -82,7 +82,7 @@ func CompileGateway() error {
 // Installing package dependencies
 func InstallDeps() error {
 	fmt.Println("Installing Deps...")
-	cmd := exec.Command("go", "mod", "download")
+	cmd := exec.Command("go", "mod", "tidy")
 	return cmd.Run()
 }
 
