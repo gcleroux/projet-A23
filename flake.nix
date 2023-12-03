@@ -8,6 +8,7 @@
       let
         pkgs = import inputs.nixpkgs { inherit system; };
         buildDeps = with pkgs; [
+          cfssl
           git
           go
           grpc-gateway
