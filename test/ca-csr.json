@@ -1,0 +1,16 @@
+{
+  "CN": "Projet IFT605 CA",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "CA",
+      "L": "Sherbrooke",
+      "ST": "QC",
+      "O": "IFT605",
+      "OU": "CA Services"
+    }
+  ]
+}

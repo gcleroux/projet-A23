@@ -7,8 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/gcleroux/projet-ift605/pkg/log"
-	"github.com/gcleroux/projet-ift605/pkg/server"
+	"github.com/gcleroux/projet-ift605/src/log"
+	"github.com/gcleroux/projet-ift605/src/server"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
