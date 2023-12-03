@@ -1,0 +1,20 @@
+---
+certs:
+  CAFile: ./.config/ca.pem
+  ServerCertFile: ./.config/server.pem
+  ServerKeyFile: ./.config/server-key.pem
+  ClientCertFile: ./.config/client.pem
+  ClientKeyFile: ./.config/client-key.pem
+  RootClientCertFile: ./.config/root-client.pem
+  RootClientKeyFile: ./.config/root-client-key.pem
+  NobodyClientCertFile: ./.config/nobody-client.pem
+  NobodyClientKeyFile: ./.config/nobody-client-key.pem
+  ACLModelFile: ./.config/model.conf
+  ACLPolicyFile: ./.config/policy.csv
+server:
+  Address: 127.0.0.1:50051
+  MaxStoreBytes: 1024
+  MaxIndexBytes: 1024
+  LogDirectory: "data"
+client:
+  GatewayPort: 8080

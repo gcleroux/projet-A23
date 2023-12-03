@@ -1,16 +1,17 @@
 package main
 
 import (
-	"fmt"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/gcleroux/projet-ift605/src/config"
 	"github.com/gcleroux/projet-ift605/src/log"
 	"github.com/gcleroux/projet-ift605/src/server"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/grpclog"
 )
 
@@ -30,19 +31,12 @@ var (
 			}
 		},
 	}
-
-	// Cobra flags
-	maxStoreBytes uint64
-	maxIndexBytes uint64
-	logDirectory  string
-	serverPort    int
 )
 
 func init() {
-	rootCmd.Flags().Uint64VarP(&maxStoreBytes, "max-store-bytes", "s", 1024, "Maximum store bytes")
-	rootCmd.Flags().Uint64VarP(&maxIndexBytes, "max-index-bytes", "i", 1024, "Maximum index bytes")
-	rootCmd.Flags().StringVarP(&logDirectory, "directory", "d", "data", "Log directory")
-	rootCmd.Flags().IntVarP(&serverPort, "port", "p", 50051, "Server port")
+	if err := config.InitializeConfig(rootCmd); err != nil {
+		grpclog.Fatal(err)
+	}
 }
 
 func main() {
@@ -52,24 +46,40 @@ func main() {
 }
 
 func run() error {
-	var err error
-
-	lis, err = net.Listen("tcp", fmt.Sprintf(":%d", serverPort))
+	// Load configuration from file
+	conf, err := config.LoadConfig()
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(logDirectory, os.ModePerm); err != nil {
+
+	lis, err = net.Listen("tcp", conf.Server.Address)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(conf.Server.LogDirectory, os.ModePerm); err != nil {
 		return err
 	}
 
-	clog, err = log.NewLog(logDirectory, log.Config{
+	serverTLSConfig, err := config.SetupTLSConfig(config.TLSConfig{
+		CertFile:      conf.Certs.ServerCertFile,
+		KeyFile:       conf.Certs.ServerKeyFile,
+		CAFile:        conf.Certs.CAFile,
+		ServerAddress: lis.Addr().String(),
+	})
+	if err != nil {
+		return err
+	}
+
+	serverCreds := credentials.NewTLS(serverTLSConfig)
+
+	clog, err = log.NewLog(conf.Server.LogDirectory, log.Config{
 		Segment: struct {
 			MaxStoreBytes uint64
 			MaxIndexBytes uint64
 			InitialOffset uint64
 		}{
-			MaxStoreBytes: maxStoreBytes,
-			MaxIndexBytes: maxIndexBytes,
+			MaxStoreBytes: conf.Server.MaxStoreBytes,
+			MaxIndexBytes: conf.Server.MaxIndexBytes,
 			InitialOffset: 0,
 		},
 	})
@@ -81,7 +91,7 @@ func run() error {
 		CommitLog: clog,
 	}
 
-	srv, err = server.NewGRPCServer(cfg)
+	srv, err = server.NewGRPCServer(cfg, grpc.Creds(serverCreds))
 	if err != nil {
 		return err
 	}

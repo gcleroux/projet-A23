@@ -6,17 +6,15 @@ import (
 	"net/http"
 
 	api "github.com/gcleroux/projet-ift605/api/v1"
+	"github.com/gcleroux/projet-ift605/src/config"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/grpclog"
 )
 
 var (
-	serverAddress string
-	gatewayPort   int
-
 	rootCmd = &cobra.Command{
 		Use:   "client",
 		Short: "gRPC client gateway to send REST requests to the gRPC server",
@@ -29,8 +27,9 @@ var (
 )
 
 func init() {
-	rootCmd.Flags().StringVarP(&serverAddress, "server-address", "s", "localhost:50051", "Server address")
-	rootCmd.Flags().IntVarP(&gatewayPort, "gateway-port", "p", 8080, "Gateway port")
+	if err := config.InitializeConfig(rootCmd); err != nil {
+		grpclog.Fatal(err)
+	}
 }
 
 func main() {
@@ -40,17 +39,31 @@ func main() {
 }
 
 func run() error {
+	conf, err := config.LoadConfig()
+	if err != nil {
+		return err
+	}
+
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	mux := runtime.NewServeMux()
-	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 
-	err := api.RegisterLogHandlerFromEndpoint(ctx, mux, serverAddress, opts)
+	clientTLSConfig, err := config.SetupTLSConfig(config.TLSConfig{
+		CAFile: conf.Certs.CAFile,
+	})
 	if err != nil {
 		return err
 	}
 
-	return http.ListenAndServe(fmt.Sprintf(":%d", gatewayPort), mux)
+	clientCreds := credentials.NewTLS(clientTLSConfig)
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(clientCreds)}
+
+	err = api.RegisterLogHandlerFromEndpoint(ctx, mux, conf.Server.Address, opts)
+	if err != nil {
+		return err
+	}
+
+	return http.ListenAndServe(fmt.Sprintf(":%d", conf.Client.GatewayPort), mux)
 }

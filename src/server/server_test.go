@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/gcleroux/projet-ift605/src/config"
@@ -35,11 +36,18 @@ func TestServer(t *testing.T) {
 func setupTest(t *testing.T, fn func(*Config)) (client api.LogClient, cfg *Config, teardown func()) {
 	t.Helper()
 
-	l, err := net.Listen("tcp", "127.0.0.1:0")
+	// Setup config
+	conf := &config.Config{}
+	conf.Server.Address = "127.0.0.1:0"
+	conf.Certs.CAFile = filepath.FromSlash("../../.config/ca.pem")
+	conf.Certs.ServerCertFile = filepath.FromSlash("../../.config/server.pem")
+	conf.Certs.ServerKeyFile = filepath.FromSlash("../../.config/server-key.pem")
+
+	l, err := net.Listen("tcp", conf.Server.Address)
 	require.NoError(t, err)
 
 	clientTLSConfig, err := config.SetupTLSConfig(config.TLSConfig{
-		CAFile: config.CAFile,
+		CAFile: conf.Certs.CAFile,
 	})
 	require.NoError(t, err)
 
@@ -52,9 +60,9 @@ func setupTest(t *testing.T, fn func(*Config)) (client api.LogClient, cfg *Confi
 	client = api.NewLogClient(cc)
 
 	serverTLSConfig, err := config.SetupTLSConfig(config.TLSConfig{
-		CertFile:      config.ServerCertFile,
-		KeyFile:       config.ServerKeyFile,
-		CAFile:        config.CAFile,
+		CertFile:      conf.Certs.ServerCertFile,
+		KeyFile:       conf.Certs.ServerKeyFile,
+		CAFile:        conf.Certs.CAFile,
 		ServerAddress: l.Addr().String(),
 	})
 	require.NoError(t, err)
@@ -87,7 +95,8 @@ func setupTest(t *testing.T, fn func(*Config)) (client api.LogClient, cfg *Confi
 	require.NoError(t, err)
 
 	go func() {
-		server.Serve(l)
+		err := server.Serve(l)
+		require.NoError(t, err)
 	}()
 
 	return client, cfg, func() {
