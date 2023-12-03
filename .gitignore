@@ -1,4 +1,3 @@
-.direnv
-log
-client
-server
+.direnv/
+data/
+bin/

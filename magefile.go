@@ -24,7 +24,7 @@ func BuildServer() error {
 	mg.Deps(Compile)
 	mg.Deps(CompileGateway)
 	fmt.Println("Building Server...")
-	cmd := exec.Command("go", "build", "-o", "server", "./cmd/server-cli")
+	cmd := exec.Command("go", "build", "-o", "./bin/server", "./cmd/server-cli")
 	return cmd.Run()
 }
 
@@ -34,7 +34,7 @@ func BuildClient() error {
 	mg.Deps(Compile)
 	mg.Deps(CompileGateway)
 	fmt.Println("Building Client...")
-	cmd := exec.Command("go", "build", "-o", "client", "./cmd/client-cli")
+	cmd := exec.Command("go", "build", "-o", "./bin/client", "./cmd/client-cli")
 	return cmd.Run()
 }
 
@@ -98,7 +98,6 @@ func Test() error {
 // Cleaning up
 func Clean() {
 	fmt.Println("Cleaning...")
-	os.RemoveAll("./log")
-	os.RemoveAll("./server")
-	os.RemoveAll("./client")
+	os.RemoveAll("log")
+	os.RemoveAll("bin")
 }

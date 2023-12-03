@@ -7,8 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/gcleroux/projet-ift605/pkg/log"
-	"github.com/gcleroux/projet-ift605/pkg/server"
+	"github.com/gcleroux/projet-ift605/src/log"
+	"github.com/gcleroux/projet-ift605/src/server"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
@@ -41,7 +41,7 @@ var (
 func init() {
 	rootCmd.Flags().Uint64VarP(&maxStoreBytes, "max-store-bytes", "s", 1024, "Maximum store bytes")
 	rootCmd.Flags().Uint64VarP(&maxIndexBytes, "max-index-bytes", "i", 1024, "Maximum index bytes")
-	rootCmd.Flags().StringVarP(&logDirectory, "directory", "d", "./log", "Log directory")
+	rootCmd.Flags().StringVarP(&logDirectory, "directory", "d", "data", "Log directory")
 	rootCmd.Flags().IntVarP(&serverPort, "port", "p", 50051, "Server port")
 }
 

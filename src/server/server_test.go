@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	api "github.com/gcleroux/projet-ift605/api/v1"
-	"github.com/gcleroux/projet-ift605/pkg/log"
+	"github.com/gcleroux/projet-ift605/src/log"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
