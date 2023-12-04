@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 
-	api "github.com/gcleroux/projet-ift605/api/v1"
+	api "github.com/gcleroux/projet-A23/api/v1"
 	"google.golang.org/grpc"
 )
 

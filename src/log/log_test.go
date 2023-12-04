@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	api "github.com/gcleroux/projet-ift605/api/v1"
+	api "github.com/gcleroux/projet-A23/api/v1"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 )

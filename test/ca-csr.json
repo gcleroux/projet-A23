@@ -1,5 +1,5 @@
 {
-  "CN": "Projet IFT605 CA",
+  "CN": "Projet-A23 CA",
   "key": {
     "algo": "rsa",
     "size": 2048
@@ -9,7 +9,7 @@
       "C": "CA",
       "L": "Sherbrooke",
       "ST": "QC",
-      "O": "IFT605",
+      "O": "Projet",
       "OU": "CA Services"
     }
   ]

@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/gcleroux/projet-ift605/src/config"
+	"github.com/gcleroux/projet-A23/src/config"
 
-	api "github.com/gcleroux/projet-ift605/api/v1"
-	"github.com/gcleroux/projet-ift605/src/log"
+	api "github.com/gcleroux/projet-A23/api/v1"
+	"github.com/gcleroux/projet-A23/src/log"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"

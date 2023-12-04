@@ -10,7 +10,7 @@ import (
 	"strings"
 	"sync"
 
-	api "github.com/gcleroux/projet-ift605/api/v1"
+	api "github.com/gcleroux/projet-A23/api/v1"
 )
 
 type Log struct {

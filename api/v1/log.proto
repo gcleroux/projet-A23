@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package log.v1;
 
-option go_package = "github.com/gcleroux/projet-ift605/api/log_v1";
+option go_package = "github.com/gcleroux/projet-A23/api/log_v1";
 
 service Log {
     // Endpoints declaration

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	api "github.com/gcleroux/projet-ift605/api/v1"
-	"github.com/gcleroux/projet-ift605/src/config"
+	api "github.com/gcleroux/projet-A23/api/v1"
+	"github.com/gcleroux/projet-A23/src/config"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"

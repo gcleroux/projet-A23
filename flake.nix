@@ -1,5 +1,5 @@
 {
-  description = "Projet IFT605";
+  description = "Projet A23";
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.05";
   inputs.flake-utils.url = "github:numtide/flake-utils";
 

@@ -1,4 +1,4 @@
-module github.com/gcleroux/projet-ift605
+module github.com/gcleroux/projet-A23
 
 go 1.20
 
