@@ -42,12 +42,16 @@ func setupTest(t *testing.T, fn func(*Config)) (client api.LogClient, cfg *Confi
 	conf.Certs.CAFile = filepath.FromSlash("../../.config/ca.pem")
 	conf.Certs.ServerCertFile = filepath.FromSlash("../../.config/server.pem")
 	conf.Certs.ServerKeyFile = filepath.FromSlash("../../.config/server-key.pem")
+	conf.Certs.ClientCertFile = filepath.FromSlash("../../.config/client.pem")
+	conf.Certs.ClientKeyFile = filepath.FromSlash("../../.config/client-key.pem")
 
 	l, err := net.Listen("tcp", conf.Server.Address)
 	require.NoError(t, err)
 
 	clientTLSConfig, err := config.SetupTLSConfig(config.TLSConfig{
-		CAFile: conf.Certs.CAFile,
+		CertFile: conf.Certs.ClientCertFile,
+		KeyFile:  conf.Certs.ClientKeyFile,
+		CAFile:   conf.Certs.CAFile,
 	})
 	require.NoError(t, err)
 
@@ -64,6 +68,7 @@ func setupTest(t *testing.T, fn func(*Config)) (client api.LogClient, cfg *Confi
 		KeyFile:       conf.Certs.ServerKeyFile,
 		CAFile:        conf.Certs.CAFile,
 		ServerAddress: l.Addr().String(),
+		Server:        true,
 	})
 	require.NoError(t, err)
 

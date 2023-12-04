@@ -96,6 +96,9 @@ func GenCert() error {
 	if err := genServerCert(); err != nil {
 		return err
 	}
+	if err := genClientCert(); err != nil {
+		return err
+	}
 
 	pemFiles, err := filepath.Glob("*.pem")
 	if err != nil {
@@ -153,6 +156,32 @@ func genServerCert() error {
 		"cfssljson",
 		"-bare",
 		"server",
+	)
+
+	cfssljson.Stdin, _ = cfssl.StdoutPipe()
+	if err := cfssl.Start(); err != nil {
+		return err
+	}
+	if err := cfssljson.Run(); err != nil {
+		return err
+	}
+	return cfssl.Wait()
+}
+
+func genClientCert() error {
+	cfssl := exec.Command(
+		"cfssl",
+		"gencert",
+		"-ca=ca.pem",
+		"-ca-key=ca-key.pem",
+		"-config="+filepath.FromSlash("test/ca-config.json"),
+		"-profile=client",
+		filepath.FromSlash("test/client-csr.json"),
+	)
+	cfssljson := exec.Command(
+		"cfssljson",
+		"-bare",
+		"client",
 	)
 
 	cfssljson.Stdin, _ = cfssl.StdoutPipe()

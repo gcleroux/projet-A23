@@ -51,7 +51,9 @@ func run() error {
 	mux := runtime.NewServeMux()
 
 	clientTLSConfig, err := config.SetupTLSConfig(config.TLSConfig{
-		CAFile: conf.Certs.CAFile,
+		KeyFile:  conf.Certs.ClientKeyFile,
+		CertFile: conf.Certs.ClientCertFile,
+		CAFile:   conf.Certs.CAFile,
 	})
 	if err != nil {
 		return err
@@ -60,6 +62,7 @@ func run() error {
 	clientCreds := credentials.NewTLS(clientTLSConfig)
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(clientCreds)}
 
+	// This is what sets up a gRPC-gateway in order to send REST requests to the server
 	err = api.RegisterLogHandlerFromEndpoint(ctx, mux, conf.Server.Address, opts)
 	if err != nil {
 		return err
