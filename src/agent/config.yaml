@@ -1,4 +1,4 @@
-# Config used only for server_test.go
+# Config used only for agent_test.go
 ---
 certs:
   CAFile: ../../.config/ca.pem
@@ -6,9 +6,7 @@ certs:
   ServerKeyFile: ../../.config/server-key.pem
   UserCertFile: ../../.config/user.pem
   UserKeyFile: ../../.config/user-key.pem
-  NobodyCertFile: ../../.config/nobody.pem
-  NobodyKeyFile: ../../.config/nobody-key.pem
   ACLModelFile: ../../.config/model.conf
   ACLPolicyFile: ../../.config/policy.csv
 server:
-  Address: 127.0.0.1:0
+  Address: 127.0.0.1
