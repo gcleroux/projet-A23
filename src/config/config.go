@@ -14,17 +14,17 @@ type Config struct {
 }
 
 type certsConfig struct {
-	CAFile               string
-	ServerCertFile       string
-	ServerKeyFile        string
-	ClientCertFile       string
-	ClientKeyFile        string
-	RootClientCertFile   string
-	RootClientKeyFile    string
-	NobodyClientCertFile string
-	NobodyClientKeyFile  string
-	ACLModelFile         string
-	ACLPolicyFile        string
+	CAFile         string
+	ServerCertFile string
+	ServerKeyFile  string
+	ClientCertFile string
+	ClientKeyFile  string
+	UserCertFile   string
+	UserKeyFile    string
+	NobodyCertFile string
+	NobodyKeyFile  string
+	ACLModelFile   string
+	ACLPolicyFile  string
 }
 
 type serverConfig struct {

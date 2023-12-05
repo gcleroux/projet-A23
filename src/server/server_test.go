@@ -4,64 +4,80 @@ import (
 	"context"
 	"net"
 	"os"
-	"path/filepath"
 	"testing"
 
-	"github.com/gcleroux/projet-A23/src/config"
-
 	api "github.com/gcleroux/projet-A23/api/v1"
+	"github.com/gcleroux/projet-A23/src/auth"
+	"github.com/gcleroux/projet-A23/src/config"
 	"github.com/gcleroux/projet-A23/src/log"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 )
 
 func TestServer(t *testing.T) {
-	scenarios := make(map[string]func(t *testing.T, client api.LogClient, config *Config))
+	scenarios := make(map[string]func(t *testing.T, userClient api.LogClient, nobodyClient api.LogClient, config *Config))
 
 	scenarios["Write/Read a message to/from the log succeeds"] = testWriteRead
 	scenarios["Write/Read stream succeeds"] = testWriteReadStream
 	scenarios["Read past log boundary fails"] = testReadPastBoundary
+	scenarios["Unauthorized user fails"] = testUnauthorized
 
 	for scenario, fn := range scenarios {
 		t.Run(scenario, func(t *testing.T) {
-			client, config, teardown := setupTest(t, nil)
+			userClient,
+				nobodyClient,
+				config,
+				teardown := setupTest(t, nil)
 			defer teardown()
-			fn(t, client, config)
+			fn(t, userClient, nobodyClient, config)
 		})
 	}
 }
 
-func setupTest(t *testing.T, fn func(*Config)) (client api.LogClient, cfg *Config, teardown func()) {
+func setupTest(t *testing.T, fn func(*Config)) (userClient api.LogClient, nobodyClient api.LogClient, cfg *Config, teardown func()) {
 	t.Helper()
 
 	// Setup config
-	conf := &config.Config{}
-	conf.Server.Address = "127.0.0.1:0"
-	conf.Certs.CAFile = filepath.FromSlash("../../.config/ca.pem")
-	conf.Certs.ServerCertFile = filepath.FromSlash("../../.config/server.pem")
-	conf.Certs.ServerKeyFile = filepath.FromSlash("../../.config/server-key.pem")
-	conf.Certs.ClientCertFile = filepath.FromSlash("../../.config/client.pem")
-	conf.Certs.ClientKeyFile = filepath.FromSlash("../../.config/client-key.pem")
+	conf, err := config.LoadConfig()
+	require.NoError(t, err)
 
 	l, err := net.Listen("tcp", conf.Server.Address)
 	require.NoError(t, err)
 
-	clientTLSConfig, err := config.SetupTLSConfig(config.TLSConfig{
-		CertFile: conf.Certs.ClientCertFile,
-		KeyFile:  conf.Certs.ClientKeyFile,
-		CAFile:   conf.Certs.CAFile,
-	})
-	require.NoError(t, err)
+	newClient := func(crtPath, keyPath string) (
+		*grpc.ClientConn,
+		api.LogClient,
+		[]grpc.DialOption,
+	) {
+		tlsConfig, err := config.SetupTLSConfig(config.TLSConfig{
+			CertFile: crtPath,
+			KeyFile:  keyPath,
+			CAFile:   conf.Certs.CAFile,
+			Server:   false,
+		})
+		require.NoError(t, err)
+		tlsCreds := credentials.NewTLS(tlsConfig)
+		opts := []grpc.DialOption{grpc.WithTransportCredentials(tlsCreds)}
+		conn, err := grpc.Dial(l.Addr().String(), opts...)
+		require.NoError(t, err)
+		client := api.NewLogClient(conn)
+		return conn, client, opts
+	}
 
-	clientCreds := credentials.NewTLS(clientTLSConfig)
-	cc, err := grpc.Dial(
-		l.Addr().String(),
-		grpc.WithTransportCredentials(clientCreds),
+	var userConn *grpc.ClientConn
+	userConn, userClient, _ = newClient(
+		conf.Certs.UserCertFile,
+		conf.Certs.UserKeyFile,
 	)
-	require.NoError(t, err)
-	client = api.NewLogClient(cc)
+
+	var nobodyConn *grpc.ClientConn
+	nobodyConn, nobodyClient, _ = newClient(
+		conf.Certs.NobodyCertFile,
+		conf.Certs.NobodyKeyFile,
+	)
 
 	serverTLSConfig, err := config.SetupTLSConfig(config.TLSConfig{
 		CertFile:      conf.Certs.ServerCertFile,
@@ -83,15 +99,17 @@ func setupTest(t *testing.T, fn func(*Config)) (client api.LogClient, cfg *Confi
 			MaxIndexBytes uint64
 			InitialOffset uint64
 		}{
-			MaxStoreBytes: 1024,
-			MaxIndexBytes: 1024,
+			MaxStoreBytes: conf.Server.MaxStoreBytes,
+			MaxIndexBytes: conf.Server.MaxIndexBytes,
 			InitialOffset: 0,
 		},
 	})
 	require.NoError(t, err)
 
+	authorizer := auth.New(conf.Certs.ACLModelFile, conf.Certs.ACLPolicyFile)
 	cfg = &Config{
-		CommitLog: clog,
+		CommitLog:  clog,
+		Authorizer: authorizer,
 	}
 	if fn != nil {
 		fn(cfg)
@@ -104,14 +122,15 @@ func setupTest(t *testing.T, fn func(*Config)) (client api.LogClient, cfg *Confi
 		require.NoError(t, err)
 	}()
 
-	return client, cfg, func() {
+	return userClient, nobodyClient, cfg, func() {
 		server.Stop()
-		cc.Close()
+		userConn.Close()
+		nobodyConn.Close()
 		l.Close()
 	}
 }
 
-func testWriteRead(t *testing.T, client api.LogClient, config *Config) {
+func testWriteRead(t *testing.T, client api.LogClient, _ api.LogClient, config *Config) {
 	ctx := context.Background()
 
 	want := &api.Record{
@@ -127,7 +146,7 @@ func testWriteRead(t *testing.T, client api.LogClient, config *Config) {
 	require.Equal(t, want.Offset, Read.Record.Offset)
 }
 
-func testReadPastBoundary(t *testing.T, client api.LogClient, config *Config) {
+func testReadPastBoundary(t *testing.T, client api.LogClient, _ api.LogClient, config *Config) {
 	ctx := context.Background()
 
 	Write, err := client.Write(ctx, &api.WriteRequest{Record: &api.Record{Value: []byte("hello world")}})
@@ -145,7 +164,7 @@ func testReadPastBoundary(t *testing.T, client api.LogClient, config *Config) {
 	}
 }
 
-func testWriteReadStream(t *testing.T, client api.LogClient, config *Config) {
+func testWriteReadStream(t *testing.T, client api.LogClient, _ api.LogClient, config *Config) {
 	ctx := context.Background()
 
 	records := []*api.Record{}
@@ -172,5 +191,33 @@ func testWriteReadStream(t *testing.T, client api.LogClient, config *Config) {
 		res, err := readStream.Recv()
 		require.NoError(t, err)
 		require.Equal(t, res.Record, &api.Record{Value: record.Value, Offset: uint64(i)})
+	}
+}
+
+func testUnauthorized(t *testing.T, _, client api.LogClient, config *Config) {
+	ctx := context.Background()
+	produce, err := client.Write(ctx,
+		&api.WriteRequest{
+			Record: &api.Record{
+				Value: []byte("hello world"),
+			},
+		},
+	)
+	if produce != nil {
+		t.Fatalf("Write response should be nil")
+	}
+	gotCode, wantCode := status.Code(err), codes.PermissionDenied
+	if gotCode != wantCode {
+		t.Fatalf("got code: %d, want: %d", gotCode, wantCode)
+	}
+	consume, err := client.Read(ctx, &api.ReadRequest{
+		Offset: 0,
+	})
+	if consume != nil {
+		t.Fatalf("Read response should be nil")
+	}
+	gotCode, wantCode = status.Code(err), codes.PermissionDenied
+	if gotCode != wantCode {
+		t.Fatalf("got code: %d, want: %d", gotCode, wantCode)
 	}
 }

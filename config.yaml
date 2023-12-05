@@ -5,10 +5,10 @@ certs:
   ServerKeyFile: ./.config/server-key.pem
   ClientCertFile: ./.config/client.pem
   ClientKeyFile: ./.config/client-key.pem
-  RootClientCertFile: ./.config/root-client.pem
-  RootClientKeyFile: ./.config/root-client-key.pem
-  NobodyClientCertFile: ./.config/nobody-client.pem
-  NobodyClientKeyFile: ./.config/nobody-client-key.pem
+  UserCertFile: ./.config/user.pem
+  UserKeyFile: ./.config/user-key.pem
+  NobodyCertFile: ./.config/nobody.pem
+  NobodyKeyFile: ./.config/nobody-key.pem
   ACLModelFile: ./.config/model.conf
   ACLPolicyFile: ./.config/policy.csv
 server:

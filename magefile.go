@@ -14,6 +14,7 @@ import (
 
 const (
 	CONFIG_PATH string = ".config"
+	TEST_PATH   string = "test"
 )
 
 // Building the application
@@ -27,6 +28,7 @@ func BuildServer() error {
 	mg.Deps(InstallDeps)
 	mg.Deps(Compile)
 	mg.Deps(CompileGateway)
+	mg.Deps(GenCert)
 	fmt.Println("Building Server...")
 	cmd := exec.Command("go", "build", "-o", filepath.FromSlash("./bin/server"), filepath.FromSlash("./cmd/server-cli"))
 	return cmd.Run()
@@ -37,6 +39,7 @@ func BuildClient() error {
 	mg.Deps(InstallDeps)
 	mg.Deps(Compile)
 	mg.Deps(CompileGateway)
+	mg.Deps(GenCert)
 	fmt.Println("Building Client...")
 	cmd := exec.Command("go", "build", "-o", filepath.FromSlash("./bin/client"), filepath.FromSlash("./cmd/client-cli"))
 	return cmd.Run()
@@ -85,18 +88,33 @@ func CompileGateway() error {
 
 // Generate the SSL certifications
 func GenCert() error {
-	fmt.Println("Generating Certs...")
 	if err := os.MkdirAll(CONFIG_PATH, os.ModePerm); err != nil {
 		return err
 	}
 
+	conf, err := os.ReadDir(CONFIG_PATH)
+	if err != nil {
+		return err
+	}
+	if len(conf) != 0 {
+		fmt.Println("Skipping genCert... `.config/` is not empty")
+		return nil
+	}
+
+	fmt.Println("Generating Certs...")
 	if err := genCACert(); err != nil {
 		return err
 	}
-	if err := genServerCert(); err != nil {
+	if err := genCert("server", "server", ""); err != nil {
 		return err
 	}
-	if err := genClientCert(); err != nil {
+	if err := genCert("client", "client", ""); err != nil {
+		return err
+	}
+	if err := genCert("client", "user", "user"); err != nil {
+		return err
+	}
+	if err := genCert("client", "nobody", "nobody"); err != nil {
 		return err
 	}
 
@@ -116,6 +134,20 @@ func GenCert() error {
 	for _, file := range files {
 		os.Rename(file, filepath.Join(CONFIG_PATH, filepath.Base(file)))
 	}
+
+	if err := copyFile(
+		filepath.Join(TEST_PATH, "model.conf"),
+		filepath.Join(CONFIG_PATH, "model.conf"),
+	); err != nil {
+		return err
+	}
+	if err := copyFile(
+		filepath.Join(TEST_PATH, "policy.csv"),
+		filepath.Join(CONFIG_PATH, "policy.csv"),
+	); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -142,46 +174,21 @@ func genCACert() error {
 	return cfssl.Wait()
 }
 
-func genServerCert() error {
+func genCert(profile, outputName, commonName string) error {
 	cfssl := exec.Command(
 		"cfssl",
 		"gencert",
 		"-ca=ca.pem",
 		"-ca-key=ca-key.pem",
 		"-config="+filepath.FromSlash("test/ca-config.json"),
-		"-profile=server",
-		filepath.FromSlash("test/server-csr.json"),
+		"-profile="+profile,
+		"-cn="+commonName,
+		filepath.FromSlash("test/"+profile+"-csr.json"),
 	)
 	cfssljson := exec.Command(
 		"cfssljson",
 		"-bare",
-		"server",
-	)
-
-	cfssljson.Stdin, _ = cfssl.StdoutPipe()
-	if err := cfssl.Start(); err != nil {
-		return err
-	}
-	if err := cfssljson.Run(); err != nil {
-		return err
-	}
-	return cfssl.Wait()
-}
-
-func genClientCert() error {
-	cfssl := exec.Command(
-		"cfssl",
-		"gencert",
-		"-ca=ca.pem",
-		"-ca-key=ca-key.pem",
-		"-config="+filepath.FromSlash("test/ca-config.json"),
-		"-profile=client",
-		filepath.FromSlash("test/client-csr.json"),
-	)
-	cfssljson := exec.Command(
-		"cfssljson",
-		"-bare",
-		"client",
+		outputName,
 	)
 
 	cfssljson.Stdin, _ = cfssl.StdoutPipe()
@@ -203,9 +210,11 @@ func InstallDeps() error {
 
 // Running tests
 func Test() error {
+	mg.Deps(GenCert)
 	fmt.Println("Testing code...")
+
 	src := filepath.FromSlash("./src/...")
-	cmd := exec.Command("go", "test", "-coverpkg=", src, src)
+	cmd := exec.Command("go", "test", "-coverpkg=", src, "-race", src, src)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
@@ -216,4 +225,16 @@ func Clean() {
 	fmt.Println("Cleaning...")
 	os.RemoveAll("data")
 	os.RemoveAll("bin")
+	os.RemoveAll(".config")
+}
+
+func copyFile(src, dst string) error {
+	sourceFile, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(dst, sourceFile, 0644); err != nil {
+		return err
+	}
+	return nil
 }

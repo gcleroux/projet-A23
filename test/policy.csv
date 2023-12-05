@@ -1,2 +1,2 @@
-p, root, *, produce
-p, root, *, consume
+p, user, *, write
+p, user, *, read

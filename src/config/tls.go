@@ -24,6 +24,7 @@ func SetupTLSConfig(cfg TLSConfig) (*tls.Config, error) {
 			cfg.CertFile,
 			cfg.KeyFile,
 		)
+
 		if err != nil {
 			return nil, err
 		}

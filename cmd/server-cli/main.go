@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/gcleroux/projet-A23/src/auth"
 	"github.com/gcleroux/projet-A23/src/config"
 	"github.com/gcleroux/projet-A23/src/log"
 	"github.com/gcleroux/projet-A23/src/server"
@@ -65,6 +66,7 @@ func run() error {
 		KeyFile:       conf.Certs.ServerKeyFile,
 		CAFile:        conf.Certs.CAFile,
 		ServerAddress: lis.Addr().String(),
+		Server:        true,
 	})
 	if err != nil {
 		return err
@@ -87,8 +89,10 @@ func run() error {
 		return err
 	}
 
+	authorizer := auth.New(conf.Certs.ACLModelFile, conf.Certs.ACLPolicyFile)
 	cfg := &server.Config{
-		CommitLog: clog,
+		CommitLog:  clog,
+		Authorizer: authorizer,
 	}
 
 	srv, err = server.NewGRPCServer(cfg, grpc.Creds(serverCreds))

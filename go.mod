@@ -3,7 +3,9 @@ module github.com/gcleroux/projet-A23
 go 1.20
 
 require (
+	github.com/casbin/casbin v1.9.1
 	github.com/edsrzf/mmap-go v1.1.0
+	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.1
 	github.com/magefile/mage v1.15.0
 	github.com/spf13/cobra v1.8.0
@@ -15,6 +17,7 @@ require (
 )
 
 require (
+	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect

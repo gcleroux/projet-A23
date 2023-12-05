@@ -14,17 +14,15 @@ import (
 	"google.golang.org/grpc/grpclog"
 )
 
-var (
-	rootCmd = &cobra.Command{
-		Use:   "client",
-		Short: "gRPC client gateway to send REST requests to the gRPC server",
-		Run: func(cmd *cobra.Command, args []string) {
-			if err := run(); err != nil {
-				grpclog.Fatal(err)
-			}
-		},
-	}
-)
+var rootCmd = &cobra.Command{
+	Use:   "client",
+	Short: "gRPC client gateway to send REST requests to the gRPC server",
+	Run: func(cmd *cobra.Command, args []string) {
+		if err := run(); err != nil {
+			grpclog.Fatal(err)
+		}
+	},
+}
 
 func init() {
 	if err := config.InitializeConfig(rootCmd); err != nil {
@@ -51,9 +49,10 @@ func run() error {
 	mux := runtime.NewServeMux()
 
 	clientTLSConfig, err := config.SetupTLSConfig(config.TLSConfig{
-		KeyFile:  conf.Certs.ClientKeyFile,
-		CertFile: conf.Certs.ClientCertFile,
+		KeyFile:  conf.Certs.UserKeyFile,
+		CertFile: conf.Certs.UserCertFile,
 		CAFile:   conf.Certs.CAFile,
+		Server:   false,
 	})
 	if err != nil {
 		return err
