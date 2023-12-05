@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net"
 	"os"
 	"os/signal"
@@ -74,20 +75,23 @@ func run() error {
 
 	serverCreds := credentials.NewTLS(serverTLSConfig)
 
-	clog, err = log.NewLog(conf.Server.LogDirectory, log.Config{
-		Segment: struct {
-			MaxStoreBytes uint64
-			MaxIndexBytes uint64
-			InitialOffset uint64
-		}{
-			MaxStoreBytes: conf.Server.MaxStoreBytes,
-			MaxIndexBytes: conf.Server.MaxIndexBytes,
-			InitialOffset: 0,
-		},
-	})
+	// clog, err = log.NewLog(conf.Server.LogDirectory, log.Config{
+	// 	Segment: struct {
+	// 		MaxStoreBytes uint64
+	// 		MaxIndexBytes uint64
+	// 		InitialOffset uint64
+	// 	}{
+	// 		MaxStoreBytes: conf.Server.MaxStoreBytes,
+	// 		MaxIndexBytes: conf.Server.MaxIndexBytes,
+	// 		InitialOffset: 0,
+	// 	},
+	// })
+	clog, err = log.NewLog(conf.Server.LogDirectory, log.Config{})
 	if err != nil {
 		return err
 	}
+	fmt.Println(clog.Config.Segment.MaxStoreBytes)
+	fmt.Println(clog.Config.Segment.MaxIndexBytes)
 
 	authorizer := auth.New(conf.Certs.ACLModelFile, conf.Certs.ACLPolicyFile)
 	cfg := &server.Config{

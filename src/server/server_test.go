@@ -93,17 +93,7 @@ func setupTest(t *testing.T, fn func(*Config)) (userClient api.LogClient, nobody
 	dir, err := os.MkdirTemp(os.TempDir(), "server-test")
 	require.NoError(t, err)
 
-	clog, err := log.NewLog(dir, log.Config{
-		Segment: struct {
-			MaxStoreBytes uint64
-			MaxIndexBytes uint64
-			InitialOffset uint64
-		}{
-			MaxStoreBytes: conf.Server.MaxStoreBytes,
-			MaxIndexBytes: conf.Server.MaxIndexBytes,
-			InitialOffset: 0,
-		},
-	})
+	clog, err := log.NewLog(dir, log.Config{})
 	require.NoError(t, err)
 
 	authorizer := auth.New(conf.Certs.ACLModelFile, conf.Certs.ACLPolicyFile)

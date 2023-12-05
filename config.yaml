@@ -13,8 +13,6 @@ certs:
   ACLPolicyFile: ./.config/policy.csv
 server:
   Address: 127.0.0.1:50051
-  MaxStoreBytes: 1024
-  MaxIndexBytes: 1024
   LogDirectory: "data"
 client:
   GatewayPort: 8080
