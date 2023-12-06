@@ -100,7 +100,7 @@ func (r *Replicator) replicate(addr string, leave chan struct{}) {
 				},
 			)
 			if err != nil {
-				r.logError(err, "failed to produce", addr)
+				r.logError(err, "failed to write", addr)
 				return
 			}
 		}

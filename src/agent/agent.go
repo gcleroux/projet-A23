@@ -24,7 +24,7 @@ type Agent struct {
 	membership *discovery.Membership
 	replicator *log.Replicator
 
-	shutdown     bool
+	isDown       bool
 	shutdowns    chan struct{}
 	shutdownLock sync.Mutex
 }
@@ -156,10 +156,10 @@ func (a *Agent) setupMembership() error {
 func (a *Agent) Shutdown() error {
 	a.shutdownLock.Lock()
 	defer a.shutdownLock.Unlock()
-	if a.shutdown {
+	if a.isDown {
 		return nil
 	}
-	a.shutdown = true
+	a.isDown = true
 	close(a.shutdowns)
 
 	shutdown := []func() error{

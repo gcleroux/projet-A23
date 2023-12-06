@@ -186,24 +186,24 @@ func testWriteReadStream(t *testing.T, client api.LogClient, _ api.LogClient, co
 
 func testUnauthorized(t *testing.T, _, client api.LogClient, config *Config) {
 	ctx := context.Background()
-	produce, err := client.Write(ctx,
+	write, err := client.Write(ctx,
 		&api.WriteRequest{
 			Record: &api.Record{
 				Value: []byte("hello world"),
 			},
 		},
 	)
-	if produce != nil {
+	if write != nil {
 		t.Fatalf("Write response should be nil")
 	}
 	gotCode, wantCode := status.Code(err), codes.PermissionDenied
 	if gotCode != wantCode {
 		t.Fatalf("got code: %d, want: %d", gotCode, wantCode)
 	}
-	consume, err := client.Read(ctx, &api.ReadRequest{
+	read, err := client.Read(ctx, &api.ReadRequest{
 		Offset: 0,
 	})
-	if consume != nil {
+	if read != nil {
 		t.Fatalf("Read response should be nil")
 	}
 	gotCode, wantCode = status.Code(err), codes.PermissionDenied

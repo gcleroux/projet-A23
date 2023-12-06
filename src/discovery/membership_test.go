@@ -2,12 +2,12 @@ package discovery
 
 import (
 	"fmt"
+	"net"
 	"testing"
 	"time"
 
 	"github.com/hashicorp/serf/serf"
 	"github.com/stretchr/testify/require"
-	"github.com/travisjeffery/go-dynaport"
 )
 
 func TestMembership(t *testing.T) {
@@ -33,22 +33,25 @@ func TestMembership(t *testing.T) {
 	require.Equal(t, fmt.Sprintf("%d", 2), <-handler.leaves)
 }
 
-func setupMember(t *testing.T, members []*Membership) (
-	[]*Membership, *handler,
-) {
+func setupMember(t *testing.T, members []*Membership) ([]*Membership, *handler) {
 	id := len(members)
-	ports := dynaport.Get(1)
-	addr := fmt.Sprintf("%s:%d", "127.0.0.1", ports[0])
-	tags := map[string]string{
-		"rpc_addr": addr,
-	}
+
+	// Find an available address
+	l, err := net.Listen("tcp", ":0")
+	require.NoError(t, err)
+	addr := l.Addr().String()
+	l.Close() // Don't need the listener anymore
+
 	c := Config{
 		NodeName: fmt.Sprintf("%d", id),
 		BindAddr: addr,
-		Tags:     tags,
+		Tags:     map[string]string{"rpc_addr": addr},
 	}
+
+	// Create a mock handler
 	h := &handler{}
 	if len(members) == 0 {
+		// Using channels to keep track of nb events
 		h.joins = make(chan map[string]string, 3)
 		h.leaves = make(chan string, 3)
 	} else {
@@ -56,8 +59,10 @@ func setupMember(t *testing.T, members []*Membership) (
 			members[0].BindAddr,
 		}
 	}
+
 	m, err := New(h, c)
 	require.NoError(t, err)
+
 	members = append(members, m)
 	return members, h
 }

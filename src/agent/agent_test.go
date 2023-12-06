@@ -1,18 +1,17 @@
-package agent_test
+package agent
 
 import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"net"
 	"os"
 	"testing"
 	"time"
 
 	api "github.com/gcleroux/projet-A23/api/v1"
-	"github.com/gcleroux/projet-A23/src/agent"
 	"github.com/gcleroux/projet-A23/src/config"
 	"github.com/stretchr/testify/require"
-	"github.com/travisjeffery/go-dynaport"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -39,15 +38,19 @@ func TestAgent(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	var agents []*agent.Agent
+	var agents []*Agent
 	for i := 0; i < 3; i++ {
-		ports := dynaport.Get(2)
-		bindAddr := fmt.Sprintf("%s:%d", "127.0.0.1", ports[0])
-		rpcPort := ports[1]
+		bindAddr, err := getAvailableAddr()
+		fmt.Println(bindAddr)
+		require.NoError(t, err)
+
+		rpcPort, err := getAvailablePort()
+		require.NoError(t, err)
 
 		dir, err := os.MkdirTemp(os.TempDir(), "agent-test")
 		require.NoError(t, err)
 
+		// Subsequent clients join the cluster
 		var startJoinAddrs []string
 		if i != 0 {
 			startJoinAddrs = append(
@@ -56,7 +59,7 @@ func TestAgent(t *testing.T) {
 			)
 		}
 
-		agent, err := agent.New(agent.Config{
+		agent, err := New(Config{
 			NodeName:        fmt.Sprintf("%d", i),
 			StartJoinAddrs:  startJoinAddrs,
 			BindAddr:        bindAddr,
@@ -80,10 +83,12 @@ func TestAgent(t *testing.T) {
 			)
 		}
 	}()
-	time.Sleep(3 * time.Second)
+	// Waiting that all the servers are initialized
+	for len(agents[0].membership.Members()) != 3 {
+	}
 
 	leaderClient := client(t, agents[0], peerTLSConfig)
-	produceResponse, err := leaderClient.Write(
+	writeResponse, err := leaderClient.Write(
 		context.Background(),
 		&api.WriteRequest{
 			Record: &api.Record{
@@ -92,43 +97,80 @@ func TestAgent(t *testing.T) {
 		},
 	)
 	require.NoError(t, err)
-	consumeResponse, err := leaderClient.Read(
+	readResponse, err := leaderClient.Read(
 		context.Background(),
 		&api.ReadRequest{
-			Offset: produceResponse.Offset,
+			Offset: writeResponse.Offset,
 		},
 	)
 	require.NoError(t, err)
-	require.Equal(t, consumeResponse.Record.Value, []byte("foo"))
+	require.Equal(t, readResponse.Record.Value, []byte("foo"))
 
 	// wait until replication has finished
-	time.Sleep(3 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 
-	followerClient := client(t, agents[1], peerTLSConfig)
-	consumeResponse, err = followerClient.Read(
-		context.Background(),
-		&api.ReadRequest{
-			Offset: produceResponse.Offset,
-		},
-	)
-	require.NoError(t, err)
-	require.Equal(t, consumeResponse.Record.Value, []byte("foo"))
+	replicated := make(chan struct{})
+	go func() {
+		for {
+			a1, _ := agents[1].log.HighestOffset()
+			a2, _ := agents[2].log.HighestOffset()
+
+			if a1 != 0 && a2 != 0 {
+				close(replicated)
+				return
+			}
+		}
+	}()
+
+	select {
+	case <-ctx.Done():
+		t.Error("Replication took too long. Consider increasing the timer.")
+	case <-replicated:
+		// Logs done replicating
+	}
+
+	for i := 1; i < 3; i++ {
+		followerClient := client(t, agents[i], peerTLSConfig)
+		readResponse, err = followerClient.Read(
+			context.Background(),
+			&api.ReadRequest{
+				Offset: writeResponse.Offset,
+			},
+		)
+		require.NoError(t, err)
+		require.Equal(t, readResponse.Record.Value, []byte("foo"))
+	}
 }
 
-func client(
-	t *testing.T,
-	agent *agent.Agent,
-	tlsConfig *tls.Config,
-) api.LogClient {
+func client(t *testing.T, agent *Agent, tlsConfig *tls.Config) api.LogClient {
 	tlsCreds := credentials.NewTLS(tlsConfig)
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(tlsCreds)}
+
 	rpcAddr, err := agent.Config.RPCAddr()
 	require.NoError(t, err)
-	conn, err := grpc.Dial(fmt.Sprintf(
-		"%s",
-		rpcAddr,
-	), opts...)
+
+	conn, err := grpc.Dial(rpcAddr, opts...)
 	require.NoError(t, err)
+
 	client := api.NewLogClient(conn)
 	return client
+}
+
+func getAvailableAddr() (string, error) {
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return "", err
+	}
+	defer l.Close()
+	return l.Addr().String(), nil
+}
+
+func getAvailablePort() (int, error) {
+	l, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return 0, err
+	}
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port, nil
 }

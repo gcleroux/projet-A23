@@ -28,15 +28,15 @@ type Handler interface {
 }
 
 func New(handler Handler, config Config) (*Membership, error) {
-	c := &Membership{
+	m := &Membership{
 		Config:  config,
 		handler: handler,
 		logger:  zap.L().Named("membership"),
 	}
-	if err := c.setupSerf(); err != nil {
+	if err := m.setupSerf(); err != nil {
 		return nil, err
 	}
-	return c, nil
+	return m, nil
 }
 
 func (m *Membership) setupSerf() (err error) {
@@ -66,6 +66,7 @@ func (m *Membership) setupSerf() (err error) {
 	return nil
 }
 
+// Runs the event loop to handle member joining/leaving the cluster
 func (m *Membership) eventHandler() {
 	for e := range m.events {
 		switch e.EventType() {
@@ -104,18 +105,22 @@ func (m *Membership) handleLeave(member serf.Member) {
 	}
 }
 
+// Return member is self identity
 func (m *Membership) isLocal(member serf.Member) bool {
 	return m.serf.LocalMember().Name == member.Name
 }
 
+// Return list of all members in cluster
 func (m *Membership) Members() []serf.Member {
 	return m.serf.Members()
 }
 
+// Member signals want to leave the cluster
 func (m *Membership) Leave() error {
 	return m.serf.Leave()
 }
 
+// Log util for discovery.Membership
 func (m *Membership) logError(err error, msg string, member serf.Member) {
 	m.logger.Error(
 		msg,
