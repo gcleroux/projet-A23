@@ -19,5 +19,10 @@
         ];
         devDeps = with pkgs;
           buildDeps ++ [ delve golangci-lint gopls gotestsum gotools httpie ];
-      in { devShell = pkgs.mkShell { buildInputs = devDeps; }; });
+      in {
+        devShell = pkgs.mkShell {
+          buildInputs = devDeps;
+          hardeningDisable = [ "fortify" ];
+        };
+      });
 }
