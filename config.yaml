@@ -18,7 +18,7 @@ certs:
 servers:
   - NodeName: "server1"
     Bootstrap: true
-    Address: 127.0.0.1
+    Address: 127.100.100.100
     LogDirectory: "data/server1"
     SerfPort: 8400
     RPCPort: 50051
@@ -27,20 +27,20 @@ servers:
 
   - NodeName: "server2"
     Bootstrap: false
-    Address: 127.0.0.1
+    Address: 127.200.200.1
     LogDirectory: "data/server2"
     SerfPort: 8401
     RPCPort: 50052
-    GatewayPort: 8081
+    GatewayPort: 8080
     JoinAddr:
-      - "127.0.0.1:8400"
+      - "127.100.100.100:8400"
 
   - NodeName: "server3"
     Bootstrap: false
-    Address: 127.0.0.1
+    Address: 127.255.255.0
     LogDirectory: "data/server3"
     SerfPort: 8402
-    GatewayPort: 8082
     RPCPort: 50053
+    GatewayPort: 8080
     JoinAddr:
-      - "127.0.0.1:8400"
+      - "127.100.100.100:8400"
