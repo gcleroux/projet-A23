@@ -10,6 +10,7 @@ service Log {
     rpc Read(ReadRequest) returns (ReadResponse) {}
     rpc ReadStream(ReadRequest) returns (stream ReadResponse) {}
     rpc WriteStream(stream WriteRequest) returns (stream WriteResponse) {}
+    rpc GetServers(GetServersRequest) returns (GetServersResponse) {}
 }
 
 message WriteRequest { Record record = 1; }
@@ -25,4 +26,14 @@ message Record {
     uint64 offset = 2;
     uint64 term = 3;
     uint32 type = 4;
+}
+
+message GetServersRequest {}
+
+message GetServersResponse { repeated Server servers = 1; }
+
+message Server {
+    string id = 1;
+    string rpc_addr = 2;
+    bool is_leader = 3;
 }

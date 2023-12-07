@@ -8,9 +8,9 @@ import (
 )
 
 type Config struct {
-	Certs  certsConfig
-	Server serverConfig
-	Client clientConfig
+	Certs   certsConfig
+	Servers []serverConfig
+	Client  clientConfig
 }
 
 type certsConfig struct {
@@ -28,14 +28,19 @@ type certsConfig struct {
 }
 
 type serverConfig struct {
-	Address       string
-	MaxStoreBytes uint64
-	MaxIndexBytes uint64
-	LogDirectory  string
+	NodeName     string
+	Bootstrap    bool
+	JoinAddr     []string
+	Address      string
+	LogDirectory string
+	SerfPort     int
+	RPCPort      int
+	GatewayPort  int
 }
 
 type clientConfig struct {
-	GatewayPort int
+	ConnectedServer string
+	GatewayPort     int
 }
 
 var (

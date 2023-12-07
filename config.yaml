@@ -11,8 +11,36 @@ certs:
   NobodyKeyFile: ./.config/nobody-key.pem
   ACLModelFile: ./.config/model.conf
   ACLPolicyFile: ./.config/policy.csv
-server:
-  Address: 127.0.0.1:50051
-  LogDirectory: "data"
-client:
-  GatewayPort: 8080
+# client:
+#   ConnectedServerAddr: "127.0.0.1"
+#   ConnectedServerRPCPort: 50051
+#   GatewayPort: 8080
+servers:
+  - NodeName: "server1"
+    Bootstrap: true
+    Address: 127.0.0.1
+    LogDirectory: "data/server1"
+    SerfPort: 8400
+    RPCPort: 50051
+    GatewayPort: 8080
+    JoinAddr: null
+
+  - NodeName: "server2"
+    Bootstrap: false
+    Address: 127.0.0.1
+    LogDirectory: "data/server2"
+    SerfPort: 8401
+    RPCPort: 50052
+    GatewayPort: 8081
+    JoinAddr:
+      - "127.0.0.1:8400"
+
+  - NodeName: "server3"
+    Bootstrap: false
+    Address: 127.0.0.1
+    LogDirectory: "data/server3"
+    SerfPort: 8402
+    GatewayPort: 8082
+    RPCPort: 50053
+    JoinAddr:
+      - "127.0.0.1:8400"

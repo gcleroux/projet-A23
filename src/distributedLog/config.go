@@ -18,6 +18,7 @@ const (
 type Config struct {
 	Raft struct {
 		raft.Config
+		BindAddr    string
 		StreamLayer *StreamLayer
 		Bootstrap   bool
 	}
@@ -31,9 +32,6 @@ func (c *Config) Init() {
 	if c.Segment.MaxIndexBytes == 0 {
 		c.Segment.MaxIndexBytes = 1024
 	}
-	if c.Segment.InitialOffset == 0 {
-		c.Segment.InitialOffset = 1
-	}
 }
 
 func (c *Config) Validate() error {
@@ -42,9 +40,6 @@ func (c *Config) Validate() error {
 	}
 	if c.Segment.MaxIndexBytes < entryWidth {
 		return fmt.Errorf("MaxIndexBytes=%d, can't be < %d", c.Segment.MaxIndexBytes, entryWidth)
-	}
-	if c.Segment.InitialOffset == 0 {
-		return fmt.Errorf("InitialOffset=%d, offset must start at 1 to be compliant with raft API", c.Segment.InitialOffset)
 	}
 	return nil
 }

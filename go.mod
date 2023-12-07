@@ -11,6 +11,7 @@ require (
 	github.com/hashicorp/raft-boltdb/v2 v2.3.0
 	github.com/hashicorp/serf v0.10.1
 	github.com/magefile/mage v1.15.0
+	github.com/soheilhy/cmux v0.1.5
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.17.0
 	github.com/stretchr/testify v1.8.4

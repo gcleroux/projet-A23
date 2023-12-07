@@ -1,38 +1,35 @@
 package main
 
 import (
-	"net"
+	"context"
+	"crypto/tls"
+	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/gcleroux/projet-A23/src/auth"
+	api "github.com/gcleroux/projet-A23/api/v1"
+	"github.com/gcleroux/projet-A23/src/agent"
 	"github.com/gcleroux/projet-A23/src/config"
-	"github.com/gcleroux/projet-A23/src/log"
-	"github.com/gcleroux/projet-A23/src/server"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/spf13/cobra"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/grpclog"
 )
 
-var (
-	lis  net.Listener
-	clog *log.Log
-	srv  *grpc.Server
-
-	// Cobra command
-	rootCmd = &cobra.Command{
-		Use:   "server",
-		Short: "Simple gRPC server for distributed logs",
-		Run: func(cmd *cobra.Command, args []string) {
-			setupInterruptHandler()
-			if err := run(); err != nil {
-				grpclog.Fatal(err)
-			}
-		},
-	}
-)
+// Cobra command
+var rootCmd = &cobra.Command{
+	Use:   "server",
+	Short: "Simple gRPC server for distributed logs",
+	Run: func(cmd *cobra.Command, args []string) {
+		if err := run(); err != nil {
+			grpclog.Fatal(err)
+		}
+	},
+}
 
 func init() {
 	if err := config.InitializeConfig(rootCmd); err != nil {
@@ -47,68 +44,87 @@ func main() {
 }
 
 func run() error {
+	var teardown []func() error
+
 	// Load configuration from file
 	conf, err := config.LoadConfig()
 	if err != nil {
 		return err
 	}
 
-	lis, err = net.Listen("tcp", conf.Server.Address)
-	if err != nil {
-		return err
-	}
-	if err := os.MkdirAll(conf.Server.LogDirectory, os.ModePerm); err != nil {
-		return err
+	for i := 0; i < len(conf.Servers); i++ {
+		s := conf.Servers[i]
+
+		if err := os.MkdirAll(s.LogDirectory, os.ModePerm); err != nil {
+			return err
+		}
+
+		serverTLSConfig, err := config.SetupTLSConfig(config.TLSConfig{
+			CertFile:      conf.Certs.ServerCertFile,
+			KeyFile:       conf.Certs.ServerKeyFile,
+			CAFile:        conf.Certs.CAFile,
+			ServerAddress: s.Address,
+			Server:        true,
+		})
+		if err != nil {
+			return err
+		}
+		peerTLSConfig, err := config.SetupTLSConfig(config.TLSConfig{
+			CertFile:      conf.Certs.UserCertFile,
+			KeyFile:       conf.Certs.UserKeyFile,
+			CAFile:        conf.Certs.CAFile,
+			Server:        false,
+			ServerAddress: s.Address,
+		})
+		if err != nil {
+			return err
+		}
+		agent, err := agent.New(agent.Config{
+			Bootstrap:       s.Bootstrap,
+			NodeName:        s.NodeName,
+			StartJoinAddrs:  s.JoinAddr,
+			BindAddr:        fmt.Sprintf("%s:%d", s.Address, s.SerfPort),
+			RPCPort:         s.RPCPort,
+			DataDir:         s.LogDirectory,
+			ACLModelFile:    conf.Certs.ACLModelFile,
+			ACLPolicyFile:   conf.Certs.ACLPolicyFile,
+			ServerTLSConfig: serverTLSConfig,
+			PeerTLSConfig:   peerTLSConfig,
+		})
+		if err != nil {
+			return err
+		}
+		mux, fn, err := setupGateway(peerTLSConfig, fmt.Sprintf("%s:%d", s.Address, s.RPCPort))
+		if err != nil {
+			return err
+		}
+
+		go http.ListenAndServe(fmt.Sprintf(":%d", s.GatewayPort), mux)
+		teardown = append(teardown, fn, agent.Shutdown)
 	}
 
-	serverTLSConfig, err := config.SetupTLSConfig(config.TLSConfig{
-		CertFile:      conf.Certs.ServerCertFile,
-		KeyFile:       conf.Certs.ServerKeyFile,
-		CAFile:        conf.Certs.CAFile,
-		ServerAddress: lis.Addr().String(),
-		Server:        true,
-	})
-	if err != nil {
-		return err
+	sigc := make(chan os.Signal, 1)
+	signal.Notify(sigc, syscall.SIGINT, syscall.SIGTERM)
+	<-sigc
+	for _, f := range teardown {
+		_ = f()
 	}
-
-	serverCreds := credentials.NewTLS(serverTLSConfig)
-	clog, err = log.NewLog(conf.Server.LogDirectory, log.Config{})
-	if err != nil {
-		return err
-	}
-
-	authorizer := auth.New(conf.Certs.ACLModelFile, conf.Certs.ACLPolicyFile)
-	cfg := &server.Config{
-		CommitLog:  clog,
-		Authorizer: authorizer,
-	}
-
-	srv, err = server.NewGRPCServer(cfg, grpc.Creds(serverCreds))
-	if err != nil {
-		return err
-	}
-
-	// Shouldn't happen since the program will never shut down
-	defer lis.Close()
-	defer srv.Stop()
-	defer clog.Close()
-
-	return srv.Serve(lis)
+	return nil
 }
 
-func setupInterruptHandler() {
-	// Set up a channel to receive interrupt signals
-	interruptChan := make(chan os.Signal, 1)
-	signal.Notify(interruptChan, os.Interrupt, syscall.SIGTERM)
+func setupGateway(cc *tls.Config, RPCaddr string) (*runtime.ServeMux, func() error, error) {
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	mux := runtime.NewServeMux()
 
-	go func() {
-		// Wait for an interrupt signal
-		<-interruptChan
-		clog.Close()
-		srv.Stop()
-		lis.Close()
+	clientCreds := credentials.NewTLS(cc)
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(clientCreds)}
 
-		os.Exit(0)
-	}()
+	// This is what sets up a gRPC-gateway in order to send REST requests to the server
+	// conn := fmt.Sprintf("%s:///%s:%d", loadbalance.Name, conf.Client.)
+	err := api.RegisterLogHandlerFromEndpoint(ctx, mux, RPCaddr, opts)
+	if err != nil {
+		return nil, func() error { cancel(); return nil }, err
+	}
+	return mux, func() error { cancel(); return nil }, nil
 }

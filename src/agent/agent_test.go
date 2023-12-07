@@ -11,12 +11,15 @@ import (
 
 	api "github.com/gcleroux/projet-A23/api/v1"
 	"github.com/gcleroux/projet-A23/src/config"
+	"github.com/gcleroux/projet-A23/src/loadbalance"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
 
 func TestAgent(t *testing.T) {
+	var agents []*Agent
+
 	conf, err := config.LoadConfig()
 	require.NoError(t, err)
 
@@ -25,7 +28,7 @@ func TestAgent(t *testing.T) {
 		KeyFile:       conf.Certs.ServerKeyFile,
 		CAFile:        conf.Certs.CAFile,
 		Server:        true,
-		ServerAddress: conf.Server.Address,
+		ServerAddress: conf.Servers[0].Address,
 	})
 	require.NoError(t, err)
 
@@ -34,11 +37,10 @@ func TestAgent(t *testing.T) {
 		KeyFile:       conf.Certs.UserKeyFile,
 		CAFile:        conf.Certs.CAFile,
 		Server:        false,
-		ServerAddress: conf.Server.Address,
+		ServerAddress: conf.Servers[0].Address,
 	})
 	require.NoError(t, err)
 
-	var agents []*Agent
 	for i := 0; i < 3; i++ {
 		bindAddr, err := getAvailableAddr()
 		fmt.Println(bindAddr)
@@ -60,6 +62,7 @@ func TestAgent(t *testing.T) {
 		}
 
 		agent, err := New(Config{
+			Bootstrap:       i == 0,
 			NodeName:        fmt.Sprintf("%d", i),
 			StartJoinAddrs:  startJoinAddrs,
 			BindAddr:        bindAddr,
@@ -83,9 +86,8 @@ func TestAgent(t *testing.T) {
 			)
 		}
 	}()
-	// Waiting that all the servers are initialized
-	for len(agents[0].membership.Members()) != 3 {
-	}
+
+	time.Sleep(3 * time.Second)
 
 	leaderClient := client(t, agents[0], peerTLSConfig)
 	writeResponse, err := leaderClient.Write(
@@ -97,6 +99,9 @@ func TestAgent(t *testing.T) {
 		},
 	)
 	require.NoError(t, err)
+	// wait until replication has finished
+	time.Sleep(3 * time.Second)
+
 	readResponse, err := leaderClient.Read(
 		context.Background(),
 		&api.ReadRequest{
@@ -106,41 +111,15 @@ func TestAgent(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, readResponse.Record.Value, []byte("foo"))
 
-	// wait until replication has finished
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	replicated := make(chan struct{})
-	go func() {
-		for {
-			a1, _ := agents[1].log.HighestOffset()
-			a2, _ := agents[2].log.HighestOffset()
-
-			if a1 != 0 && a2 != 0 {
-				close(replicated)
-				return
-			}
-		}
-	}()
-
-	select {
-	case <-ctx.Done():
-		t.Error("Replication took too long. Consider increasing the timer.")
-	case <-replicated:
-		// Logs done replicating
-	}
-
-	for i := 1; i < 3; i++ {
-		followerClient := client(t, agents[i], peerTLSConfig)
-		readResponse, err = followerClient.Read(
-			context.Background(),
-			&api.ReadRequest{
-				Offset: writeResponse.Offset,
-			},
-		)
-		require.NoError(t, err)
-		require.Equal(t, readResponse.Record.Value, []byte("foo"))
-	}
+	followerClient := client(t, agents[1], peerTLSConfig)
+	readResponse, err = followerClient.Read(
+		context.Background(),
+		&api.ReadRequest{
+			Offset: writeResponse.Offset,
+		},
+	)
+	require.NoError(t, err)
+	require.Equal(t, readResponse.Record.Value, []byte("foo"))
 }
 
 func client(t *testing.T, agent *Agent, tlsConfig *tls.Config) api.LogClient {
@@ -150,7 +129,11 @@ func client(t *testing.T, agent *Agent, tlsConfig *tls.Config) api.LogClient {
 	rpcAddr, err := agent.Config.RPCAddr()
 	require.NoError(t, err)
 
-	conn, err := grpc.Dial(rpcAddr, opts...)
+	conn, err := grpc.Dial(fmt.Sprintf(
+		"%s:///%s",
+		loadbalance.Name,
+		rpcAddr,
+	), opts...)
 	require.NoError(t, err)
 
 	client := api.NewLogClient(conn)

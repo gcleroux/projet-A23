@@ -10,6 +10,7 @@ import (
 
 	api "github.com/gcleroux/projet-A23/api/v1"
 	"github.com/gcleroux/projet-A23/src/config"
+	// "github.com/gcleroux/projet-A23/src/loadbalance"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
@@ -56,11 +57,15 @@ func run() error {
 
 	mux := runtime.NewServeMux()
 
+	// The leader will always be the first server
+	s := conf.Servers[0]
+
 	clientTLSConfig, err := config.SetupTLSConfig(config.TLSConfig{
-		KeyFile:  conf.Certs.UserKeyFile,
-		CertFile: conf.Certs.UserCertFile,
-		CAFile:   conf.Certs.CAFile,
-		Server:   false,
+		KeyFile:       conf.Certs.UserKeyFile,
+		CertFile:      conf.Certs.UserCertFile,
+		CAFile:        conf.Certs.CAFile,
+		Server:        false,
+		ServerAddress: s.Address,
 	})
 	if err != nil {
 		return err
@@ -70,7 +75,8 @@ func run() error {
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(clientCreds)}
 
 	// This is what sets up a gRPC-gateway in order to send REST requests to the server
-	err = api.RegisterLogHandlerFromEndpoint(ctx, mux, conf.Server.Address, opts)
+	// conn := fmt.Sprintf("%s:///%s:%d", loadbalance.Name, conf.Client.)
+	err = api.RegisterLogHandlerFromEndpoint(ctx, mux, conf.Client.ConnectedServer, opts)
 	if err != nil {
 		return err
 	}

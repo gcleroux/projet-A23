@@ -23,6 +23,7 @@ const (
 	Log_Read_FullMethodName        = "/log.v1.Log/Read"
 	Log_ReadStream_FullMethodName  = "/log.v1.Log/ReadStream"
 	Log_WriteStream_FullMethodName = "/log.v1.Log/WriteStream"
+	Log_GetServers_FullMethodName  = "/log.v1.Log/GetServers"
 )
 
 // LogClient is the client API for Log service.
@@ -34,6 +35,7 @@ type LogClient interface {
 	Read(ctx context.Context, in *ReadRequest, opts ...grpc.CallOption) (*ReadResponse, error)
 	ReadStream(ctx context.Context, in *ReadRequest, opts ...grpc.CallOption) (Log_ReadStreamClient, error)
 	WriteStream(ctx context.Context, opts ...grpc.CallOption) (Log_WriteStreamClient, error)
+	GetServers(ctx context.Context, in *GetServersRequest, opts ...grpc.CallOption) (*GetServersResponse, error)
 }
 
 type logClient struct {
@@ -125,6 +127,15 @@ func (x *logWriteStreamClient) Recv() (*WriteResponse, error) {
 	return m, nil
 }
 
+func (c *logClient) GetServers(ctx context.Context, in *GetServersRequest, opts ...grpc.CallOption) (*GetServersResponse, error) {
+	out := new(GetServersResponse)
+	err := c.cc.Invoke(ctx, Log_GetServers_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LogServer is the server API for Log service.
 // All implementations must embed UnimplementedLogServer
 // for forward compatibility
@@ -134,6 +145,7 @@ type LogServer interface {
 	Read(context.Context, *ReadRequest) (*ReadResponse, error)
 	ReadStream(*ReadRequest, Log_ReadStreamServer) error
 	WriteStream(Log_WriteStreamServer) error
+	GetServers(context.Context, *GetServersRequest) (*GetServersResponse, error)
 	mustEmbedUnimplementedLogServer()
 }
 
@@ -152,6 +164,9 @@ func (UnimplementedLogServer) ReadStream(*ReadRequest, Log_ReadStreamServer) err
 }
 func (UnimplementedLogServer) WriteStream(Log_WriteStreamServer) error {
 	return status.Errorf(codes.Unimplemented, "method WriteStream not implemented")
+}
+func (UnimplementedLogServer) GetServers(context.Context, *GetServersRequest) (*GetServersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetServers not implemented")
 }
 func (UnimplementedLogServer) mustEmbedUnimplementedLogServer() {}
 
@@ -249,6 +264,24 @@ func (x *logWriteStreamServer) Recv() (*WriteRequest, error) {
 	return m, nil
 }
 
+func _Log_GetServers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetServersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LogServer).GetServers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Log_GetServers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LogServer).GetServers(ctx, req.(*GetServersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Log_ServiceDesc is the grpc.ServiceDesc for Log service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -263,6 +296,10 @@ var Log_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Read",
 			Handler:    _Log_Read_Handler,
+		},
+		{
+			MethodName: "GetServers",
+			Handler:    _Log_GetServers_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

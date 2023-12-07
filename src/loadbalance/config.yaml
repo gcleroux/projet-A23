@@ -1,4 +1,4 @@
-# Config used only for agent_test.go
+# Config used only for resolver_test.go
 ---
 certs:
   CAFile: ../../.config/ca.pem
