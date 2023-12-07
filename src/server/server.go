@@ -40,7 +40,7 @@ type Authorizer interface {
 }
 
 type ServerGetter interface {
-	GetServers() ([]*api.Server, error)
+	GetServers(*api.GetServersRequest) ([]*api.Server, error)
 }
 
 type Config struct {
@@ -190,7 +190,7 @@ func (s *grpcServer) ReadStream(req *api.ReadRequest, stream api.Log_ReadStreamS
 }
 
 func (s *grpcServer) GetServers(ctx context.Context, req *api.GetServersRequest) (*api.GetServersResponse, error) {
-	servers, err := s.ServerGetter.GetServers()
+	servers, err := s.ServerGetter.GetServers(req)
 	if err != nil {
 		return nil, err
 	}

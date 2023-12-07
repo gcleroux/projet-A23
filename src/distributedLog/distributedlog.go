@@ -236,18 +236,30 @@ func (l *DistributedLog) GetLeader() (raft.ServerAddress, raft.ServerID) {
 	return l.raft.LeaderWithID()
 }
 
-func (l *DistributedLog) GetServers() ([]*api.Server, error) {
+func (l *DistributedLog) GetServers(req *api.GetServersRequest) ([]*api.Server, error) {
 	future := l.raft.GetConfiguration()
 	if err := future.Error(); err != nil {
 		return nil, err
 	}
 	var servers []*api.Server
 	for _, server := range future.Configuration().Servers {
-		servers = append(servers, &api.Server{
-			Id:       string(server.ID),
-			RpcAddr:  string(server.Address),
-			IsLeader: l.raft.Leader() == server.Address,
-		})
+		id := string(server.ID)
+		info := l.config.Servers[id]
+		_, km := HaversineDistance(
+			Coord{req.Latitude, req.Longitude},
+			Coord{info.Latitude, info.Longitude},
+		)
+		if km < req.Radius {
+			servers = append(servers, &api.Server{
+				Id:          id,
+				RpcAddr:     string(server.Address),
+				IsLeader:    l.raft.Leader() == server.Address,
+				GatewayPort: uint32(info.GatewayPort),
+				Latitude:    info.Latitude,
+				Longitude:   info.Longitude,
+				Distance:    km,
+			})
+		}
 	}
 	return servers, nil
 }

@@ -24,6 +24,9 @@ servers:
     RPCPort: 50051
     GatewayPort: 8080
     JoinAddr: null
+    # Sherbrooke
+    Latitude: 45.404476
+    Longitude: -71.888351
 
   - NodeName: "server2"
     Bootstrap: false
@@ -34,6 +37,9 @@ servers:
     GatewayPort: 8080
     JoinAddr:
       - "127.100.100.100:8400"
+    # Montreal
+    Latitude: 45.508888
+    Longitude: -73.561668
 
   - NodeName: "server3"
     Bootstrap: false
@@ -44,3 +50,6 @@ servers:
     GatewayPort: 8080
     JoinAddr:
       - "127.100.100.100:8400"
+    # Quebec
+    Latitude: 46.829853
+    Longitude: -71.254028

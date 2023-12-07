@@ -12,6 +12,7 @@ import (
 	api "github.com/gcleroux/projet-A23/api/v1"
 	"github.com/gcleroux/projet-A23/src/agent"
 	"github.com/gcleroux/projet-A23/src/config"
+	dlog "github.com/gcleroux/projet-A23/src/distributedLog"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/spf13/cobra"
 
@@ -52,8 +53,7 @@ func run() error {
 		return err
 	}
 
-	for i := 0; i < len(conf.Servers); i++ {
-		s := conf.Servers[i]
+	for _, s := range conf.Servers {
 
 		if err := os.MkdirAll(s.LogDirectory, os.ModePerm); err != nil {
 			return err
@@ -79,7 +79,8 @@ func run() error {
 		if err != nil {
 			return err
 		}
-		agent, err := agent.New(agent.Config{
+
+		c := agent.Config{
 			Bootstrap:       s.Bootstrap,
 			NodeName:        s.NodeName,
 			StartJoinAddrs:  s.JoinAddr,
@@ -90,7 +91,20 @@ func run() error {
 			ACLPolicyFile:   conf.Certs.ACLPolicyFile,
 			ServerTLSConfig: serverTLSConfig,
 			PeerTLSConfig:   peerTLSConfig,
-		})
+		}
+		if s.Bootstrap {
+			serverInfo := make(map[string]dlog.ServerInfo)
+			for _, s := range conf.Servers {
+				serverInfo[s.NodeName] = dlog.ServerInfo{
+					s.Latitude,
+					s.Longitude,
+					s.GatewayPort,
+				}
+			}
+			c.ServerInfo = serverInfo
+		}
+
+		agent, err := agent.New(c)
 		if err != nil {
 			return err
 		}

@@ -29,7 +29,11 @@ message Record {
     string server = 5;
 }
 
-message GetServersRequest {}
+message GetServersRequest {
+    double latitude = 1;
+    double longitude = 2;
+    double radius = 3;
+}
 
 message GetServersResponse { repeated Server servers = 1; }
 
@@ -37,4 +41,8 @@ message Server {
     string id = 1;
     string rpc_addr = 2;
     bool is_leader = 3;
+    uint32 gatewayPort = 4;
+    double latitude = 5;
+    double longitude = 6;
+    double distance = 7;
 }

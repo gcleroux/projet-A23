@@ -37,6 +37,8 @@ type serverConfig struct {
 	RPCPort      int
 	GatewayPort  int
 	Clients      []string
+	Latitude     float64
+	Longitude    float64
 }
 
 type clientConfig struct {

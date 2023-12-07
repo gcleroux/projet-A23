@@ -43,6 +43,7 @@ type Config struct {
 	StartJoinAddrs  []string
 	ACLModelFile    string
 	ACLPolicyFile   string
+	ServerInfo      map[string]dlog.ServerInfo
 }
 
 func (c Config) RPCAddr() (string, error) {
@@ -118,6 +119,7 @@ func (a *Agent) setupLog() error {
 	logConfig.Raft.BindAddr = rpcAddr
 	logConfig.Raft.LocalID = raft.ServerID(a.Config.NodeName)
 	logConfig.Raft.Bootstrap = a.Config.Bootstrap
+	logConfig.Servers = a.Config.ServerInfo
 	a.log, err = dlog.NewDistributedLog(
 		a.Config.DataDir,
 		logConfig,

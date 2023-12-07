@@ -23,6 +23,13 @@ type Config struct {
 		Bootstrap   bool
 	}
 	log.Config
+	Servers map[string]ServerInfo
+}
+
+type ServerInfo struct {
+	Latitude    float64
+	Longitude   float64
+	GatewayPort int
 }
 
 func (c *Config) Init() {
