@@ -179,8 +179,10 @@ func (s *grpcServer) ReadStream(req *api.ReadRequest, stream api.Log_ReadStreamS
 			default:
 				return err
 			}
-			if err = stream.Send(res); err != nil {
-				return err
+			if res.GetRecord().Server == s.NodeName {
+				if err = stream.Send(res); err != nil {
+					return err
+				}
 			}
 			req.Offset++
 		}
