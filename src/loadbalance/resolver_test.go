@@ -36,7 +36,7 @@ func TestResolver(t *testing.T) {
 
 	srv, err := server.NewGRPCServer(&server.Config{
 		ServerGetter: &getServers{},
-	}, grpc.Creds(serverCreds))
+	}, nil, grpc.Creds(serverCreds))
 	require.NoError(t, err)
 
 	go srv.Serve(l)

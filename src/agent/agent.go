@@ -136,10 +136,14 @@ func (a *Agent) setupServer() error {
 		a.Config.ACLModelFile,
 		a.Config.ACLPolicyFile,
 	)
+	grpcLn := a.mux.Match(cmux.Any())
+
 	serverConfig := &server.Config{
 		CommitLog:    a.log,
 		Authorizer:   authorizer,
 		ServerGetter: a.log,
+		NodeName:     a.Config.NodeName,
+		ServerAddr:   grpcLn.Addr().String(),
 	}
 	var opts []grpc.ServerOption
 	if a.Config.ServerTLSConfig != nil {
@@ -147,11 +151,10 @@ func (a *Agent) setupServer() error {
 		opts = append(opts, grpc.Creds(creds))
 	}
 	var err error
-	a.server, err = server.NewGRPCServer(serverConfig, opts...)
+	a.server, err = server.NewGRPCServer(serverConfig, credentials.NewTLS(a.Config.PeerTLSConfig), opts...)
 	if err != nil {
 		return err
 	}
-	grpcLn := a.mux.Match(cmux.Any())
 	go func() {
 		if err := a.server.Serve(grpcLn); err != nil {
 			_ = a.Shutdown()

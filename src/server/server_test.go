@@ -12,6 +12,7 @@ import (
 	"github.com/gcleroux/projet-A23/src/auth"
 	"github.com/gcleroux/projet-A23/src/config"
 	"github.com/gcleroux/projet-A23/src/log"
+	"github.com/hashicorp/raft"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -24,6 +25,14 @@ import (
 )
 
 var debug = flag.Bool("debug", false, "Enable observability for debugging.")
+
+type MockDLog struct {
+	*log.Log
+}
+
+func (m *MockDLog) GetLeader() (raft.ServerAddress, raft.ServerID) {
+	return "", ""
+}
 
 func TestMain(m *testing.M) {
 	flag.Parse()
@@ -64,7 +73,7 @@ func setupTest(t *testing.T, fn func(*Config)) (userClient api.LogClient, nobody
 	conf, err := config.LoadConfig()
 	require.NoError(t, err)
 
-	l, err := net.Listen("tcp", conf.Server.Address)
+	l, err := net.Listen("tcp", conf.Servers[0].Address)
 	require.NoError(t, err)
 
 	newClient := func(crtPath, keyPath string) (
@@ -116,6 +125,8 @@ func setupTest(t *testing.T, fn func(*Config)) (userClient api.LogClient, nobody
 	clog, err := log.NewLog(dir, &log.Config{})
 	require.NoError(t, err)
 
+	mockLog := &MockDLog{Log: clog}
+
 	authorizer := auth.New(conf.Certs.ACLModelFile, conf.Certs.ACLPolicyFile)
 
 	var telemetryExporter *exporter.LogExporter
@@ -139,13 +150,13 @@ func setupTest(t *testing.T, fn func(*Config)) (userClient api.LogClient, nobody
 	}
 
 	cfg = &Config{
-		CommitLog:  clog,
+		CommitLog:  mockLog,
 		Authorizer: authorizer,
 	}
 	if fn != nil {
 		fn(cfg)
 	}
-	server, err := NewGRPCServer(cfg, grpc.Creds(serverCreds))
+	server, err := NewGRPCServer(cfg, nil, grpc.Creds(serverCreds))
 	require.NoError(t, err)
 
 	go func() {

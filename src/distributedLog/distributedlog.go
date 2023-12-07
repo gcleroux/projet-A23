@@ -232,6 +232,10 @@ func (l *DistributedLog) Close() error {
 	return l.log.Close()
 }
 
+func (l *DistributedLog) GetLeader() (raft.ServerAddress, raft.ServerID) {
+	return l.raft.LeaderWithID()
+}
+
 func (l *DistributedLog) GetServers() ([]*api.Server, error) {
 	future := l.raft.GetConfiguration()
 	if err := future.Error(); err != nil {

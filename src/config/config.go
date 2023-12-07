@@ -36,6 +36,7 @@ type serverConfig struct {
 	SerfPort     int
 	RPCPort      int
 	GatewayPort  int
+	Clients      []string
 }
 
 type clientConfig struct {

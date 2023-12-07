@@ -7,6 +7,7 @@ import (
 	api "github.com/gcleroux/projet-A23/api/v1"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	"github.com/hashicorp/raft"
 
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
@@ -31,6 +32,7 @@ type grpcServer struct {
 type CommitLog interface {
 	Append(*api.Record) (uint64, error)
 	Read(uint64) (*api.Record, error)
+	GetLeader() (raft.ServerAddress, raft.ServerID)
 }
 
 type Authorizer interface {
@@ -45,6 +47,9 @@ type Config struct {
 	CommitLog    CommitLog
 	Authorizer   Authorizer
 	ServerGetter ServerGetter
+	NodeName     string
+	ServerAddr   string
+	creds        credentials.TransportCredentials
 }
 
 const (
@@ -62,8 +67,8 @@ func newgrpcServer(config *Config) (srv *grpcServer, err error) {
 	return srv, nil
 }
 
-func NewGRPCServer(config *Config, grpcOpts ...grpc.ServerOption) (*grpc.Server, error) {
-	logger := zap.L().Named("server")
+func NewGRPCServer(config *Config, creds credentials.TransportCredentials, grpcOpts ...grpc.ServerOption) (*grpc.Server, error) {
+	logger := zap.L().Named(config.NodeName)
 	zapOpts := []grpc_zap.Option{
 		grpc_zap.WithDurationField(
 			func(duration time.Duration) zapcore.Field {
@@ -95,6 +100,7 @@ func NewGRPCServer(config *Config, grpcOpts ...grpc.ServerOption) (*grpc.Server,
 	)
 	gsrv := grpc.NewServer(grpcOpts...)
 	srv, err := newgrpcServer(config)
+	srv.creds = creds
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +116,16 @@ func (s *grpcServer) Write(ctx context.Context, req *api.WriteRequest) (*api.Wri
 	); err != nil {
 		return nil, err
 	}
-	offset, err := s.CommitLog.Append(req.Record)
+	record := req.Record
+	leader, _ := s.CommitLog.GetLeader()
+	if string(leader) != s.ServerAddr {
+		record.Server = s.NodeName
+		return s.forwardToLeader(ctx, record, string(leader))
+	}
+	if record.Server == "" {
+		record.Server = s.NodeName
+	}
+	offset, err := s.CommitLog.Append(record)
 	if err != nil {
 		return nil, err
 	}
@@ -202,6 +217,18 @@ func authenticate(ctx context.Context) (context.Context, error) {
 
 func subject(ctx context.Context) string {
 	return ctx.Value(subjectContextKey{}).(string)
+}
+
+func (s *grpcServer) forwardToLeader(ctx context.Context, r *api.Record, addr string) (*api.WriteResponse, error) {
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(s.creds)}
+	leaderConn, err := grpc.Dial(addr, opts...)
+	if err != nil {
+		return nil, err
+	}
+	defer leaderConn.Close()
+	client := api.NewLogClient(leaderConn)
+
+	return client.Write(ctx, &api.WriteRequest{Record: r})
 }
 
 type subjectContextKey struct{}
