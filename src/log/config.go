@@ -2,15 +2,23 @@ package log
 
 import "fmt"
 
-type Config struct {
-	Segment struct {
-		MaxStoreBytes uint64
-		MaxIndexBytes uint64
-		InitialOffset uint64
-	}
+type LogConfig interface {
+	Init()
+	Validate() error
+	GetSegment() *SegmentConfig
 }
 
-func (c *Config) init() {
+type Config struct {
+	Segment SegmentConfig
+}
+
+type SegmentConfig struct {
+	MaxStoreBytes uint64
+	MaxIndexBytes uint64
+	InitialOffset uint64
+}
+
+func (c *Config) Init() {
 	if c.Segment.MaxStoreBytes == 0 {
 		c.Segment.MaxStoreBytes = 1024
 	}
@@ -19,7 +27,7 @@ func (c *Config) init() {
 	}
 }
 
-func (c *Config) validate() error {
+func (c *Config) Validate() error {
 	if c.Segment.MaxStoreBytes < lenWidth {
 		return fmt.Errorf("MaxStoreBytes=%d, can't be < %d", c.Segment.MaxStoreBytes, lenWidth)
 	}
@@ -27,4 +35,8 @@ func (c *Config) validate() error {
 		return fmt.Errorf("MaxIndexBytes=%d, can't be < %d", c.Segment.MaxIndexBytes, entryWidth)
 	}
 	return nil
+}
+
+func (c *Config) GetSegment() *SegmentConfig {
+	return &c.Segment
 }

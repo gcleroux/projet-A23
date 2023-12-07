@@ -81,7 +81,7 @@ func (a *Agent) setupLog() error {
 	var err error
 	a.log, err = log.NewLog(
 		a.Config.DataDir,
-		log.Config{},
+		&log.Config{},
 	)
 	return err
 }

@@ -19,15 +19,15 @@ type Log struct {
 	mu sync.RWMutex
 
 	Dir    string // Where we store the segments
-	Config Config
+	Config LogConfig
 
 	activeSegment *segment // Segment we append writes to
 	segments      []*segment
 }
 
-func NewLog(dir string, c Config) (*Log, error) {
-	c.init()
-	if err := c.validate(); err != nil {
+func NewLog(dir string, c LogConfig) (*Log, error) {
+	c.Init()
+	if err := c.Validate(); err != nil {
 		return nil, err
 	}
 
@@ -67,7 +67,7 @@ func (l *Log) setup() error {
 	}
 	if l.segments == nil {
 		if err = l.newSegment(
-			l.Config.Segment.InitialOffset,
+			l.Config.GetSegment().InitialOffset,
 		); err != nil {
 			return err
 		}

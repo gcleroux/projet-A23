@@ -24,7 +24,7 @@ type index struct {
 }
 
 // newIndex creates a new log index based on the provided file and configuration.
-func newIndex(f *os.File, c Config) (*index, error) {
+func newIndex(f *os.File, c LogConfig) (*index, error) {
 	idx := &index{
 		file: f,
 	}
@@ -40,7 +40,7 @@ func newIndex(f *os.File, c Config) (*index, error) {
 	// later on without corruption. So we max out the length now and will handle
 	// the truncating back to actual size during Close()
 	if err = os.Truncate(
-		f.Name(), int64(c.Segment.MaxIndexBytes),
+		f.Name(), int64(c.GetSegment().MaxIndexBytes),
 	); err != nil {
 		return nil, err
 	}
