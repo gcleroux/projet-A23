@@ -70,11 +70,7 @@ func New(config Config) (*Agent, error) {
 			return nil, err
 		}
 	}
-	go func() {
-		if err := a.serve(); err != nil {
-			panic(err)
-		}
-	}()
+	go a.serve()
 	return a, nil
 }
 

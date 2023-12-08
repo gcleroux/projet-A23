@@ -1,12 +1,12 @@
 # Config used only for agent_test.go
 ---
 certs:
-  CAFile: ../../.config/ca.pem
-  ServerCertFile: ../../.config/server.pem
-  ServerKeyFile: ../../.config/server-key.pem
-  UserCertFile: ../../.config/user.pem
-  UserKeyFile: ../../.config/user-key.pem
-  ACLModelFile: ../../.config/model.conf
-  ACLPolicyFile: ../../.config/policy.csv
+  ca_file: ../../.config/ca.pem
+  server_cert_file: ../../.config/server.pem
+  server_key_file: ../../.config/server-key.pem
+  user_cert_file: ../../.config/user.pem
+  user_key_file: ../../.config/user-key.pem
+  acl_model_file: ../../.config/model.conf
+  acl_policy_file: ../../.config/policy.csv
 servers:
-  - Address: 127.0.0.1
+  - address: 127.0.0.1
