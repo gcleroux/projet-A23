@@ -1,55 +1,47 @@
----
 certs:
-  CAFile: ./.config/ca.pem
-  ServerCertFile: ./.config/server.pem
-  ServerKeyFile: ./.config/server-key.pem
-  ClientCertFile: ./.config/client.pem
-  ClientKeyFile: ./.config/client-key.pem
-  UserCertFile: ./.config/user.pem
-  UserKeyFile: ./.config/user-key.pem
-  NobodyCertFile: ./.config/nobody.pem
-  NobodyKeyFile: ./.config/nobody-key.pem
-  ACLModelFile: ./.config/model.conf
-  ACLPolicyFile: ./.config/policy.csv
-# client:
-#   ConnectedServerAddr: "127.0.0.1"
-#   ConnectedServerRPCPort: 50051
-#   GatewayPort: 8080
+  ca_file: ./.config/ca.pem
+  server_cert_file: ./.config/server.pem
+  server_key_file: ./.config/server-key.pem
+  client_cert_file: ./.config/client.pem
+  client_key_file: ./.config/client-key.pem
+  user_cert_file: ./.config/user.pem
+  user_key_file: ./.config/user-key.pem
+  nobody_cert_file: ./.config/nobody.pem
+  nobody_key_file: ./.config/nobody-key.pem
+  acl_model_file: ./.config/model.conf
+  acl_policy_file: ./.config/policy.csv
 servers:
-  - NodeName: "server1"
-    Bootstrap: true
-    Address: 127.100.100.100
-    LogDirectory: "data/server1"
-    SerfPort: 8400
-    RPCPort: 50051
-    GatewayPort: 8080
-    JoinAddr: null
-    # Sherbrooke
-    Latitude: 45.404476
-    Longitude: -71.888351
+  - node_name: "server1"
+    bootstrap: true
+    join_addr: null
+    address: 127.100.100.100
+    log_directory: "data/server1"
+    serf_port: 8400
+    rpc_port: 50051
+    gateway_port: 8080
+    latitude: 45.404476
+    longitude: -71.888351
 
-  - NodeName: "server2"
-    Bootstrap: false
-    Address: 127.200.200.1
-    LogDirectory: "data/server2"
-    SerfPort: 8401
-    RPCPort: 50052
-    GatewayPort: 8080
-    JoinAddr:
+  - node_name: "server2"
+    bootstrap: false
+    join_addr:
       - "127.100.100.100:8400"
-    # Montreal
-    Latitude: 45.508888
-    Longitude: -73.561668
+    address: 127.200.200.1
+    log_directory: "data/server2"
+    serf_port: 8401
+    rpc_port: 50052
+    gateway_port: 8080
+    latitude: 45.508888
+    longitude: -73.561668
 
-  - NodeName: "server3"
-    Bootstrap: false
-    Address: 127.255.255.0
-    LogDirectory: "data/server3"
-    SerfPort: 8402
-    RPCPort: 50053
-    GatewayPort: 8080
-    JoinAddr:
+  - node_name: "server3"
+    bootstrap: false
+    join_addr:
       - "127.100.100.100:8400"
-    # Quebec
-    Latitude: 46.829853
-    Longitude: -71.254028
+    address: 127.255.255.0
+    log_directory: "data/server3"
+    serf_port: 8402
+    rpc_port: 50053
+    gateway_port: 8080
+    latitude: 46.829853
+    longitude: -71.254028

@@ -20,7 +20,6 @@ const (
 // Building the application
 func Build() {
 	mg.Deps(BuildServer)
-	mg.Deps(BuildClient)
 }
 
 // Build the gRPC server
@@ -31,17 +30,6 @@ func BuildServer() error {
 	mg.Deps(GenCert)
 	fmt.Println("Building Server...")
 	cmd := exec.Command("go", "build", "-o", filepath.FromSlash("./bin/server"), filepath.FromSlash("./cmd/server-cli"))
-	return cmd.Run()
-}
-
-// Build the gRPC client
-func BuildClient() error {
-	mg.Deps(InstallDeps)
-	mg.Deps(Compile)
-	mg.Deps(CompileGateway)
-	mg.Deps(GenCert)
-	fmt.Println("Building Client...")
-	cmd := exec.Command("go", "build", "-o", filepath.FromSlash("./bin/client"), filepath.FromSlash("./cmd/client-cli"))
 	return cmd.Run()
 }
 

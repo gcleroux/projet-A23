@@ -8,42 +8,35 @@ import (
 )
 
 type Config struct {
-	Certs   certsConfig
-	Servers []serverConfig
-	Client  clientConfig
+	Certs   certsConfig    `mapstructure:"certs"`
+	Servers []serverConfig `mapstructure:"servers"`
 }
 
 type certsConfig struct {
-	CAFile         string
-	ServerCertFile string
-	ServerKeyFile  string
-	ClientCertFile string
-	ClientKeyFile  string
-	UserCertFile   string
-	UserKeyFile    string
-	NobodyCertFile string
-	NobodyKeyFile  string
-	ACLModelFile   string
-	ACLPolicyFile  string
+	CAFile         string `mapstructure:"ca_file"`
+	ServerCertFile string `mapstructure:"server_cert_file"`
+	ServerKeyFile  string `mapstructure:"server_key_file"`
+	ClientCertFile string `mapstructure:"client_cert_file"`
+	ClientKeyFile  string `mapstructure:"client_key_file"`
+	UserCertFile   string `mapstructure:"user_cert_file"`
+	UserKeyFile    string `mapstructure:"user_key_file"`
+	NobodyCertFile string `mapstructure:"nobody_cert_file"`
+	NobodyKeyFile  string `mapstructure:"nobody_key_file"`
+	ACLModelFile   string `mapstructure:"acl_model_file"`
+	ACLPolicyFile  string `mapstructure:"acl_policy_file"`
 }
 
 type serverConfig struct {
-	NodeName     string
-	Bootstrap    bool
-	JoinAddr     []string
-	Address      string
-	LogDirectory string
-	SerfPort     int
-	RPCPort      int
-	GatewayPort  int
-	Clients      []string
-	Latitude     float64
-	Longitude    float64
-}
-
-type clientConfig struct {
-	ConnectedServer string
-	GatewayPort     int
+	NodeName     string   `mapstructure:"node_name"`
+	Bootstrap    bool     `mapstructure:"bootstrap"`
+	JoinAddr     []string `mapstructure:"join_addr"`
+	Address      string   `mapstructure:"address"`
+	LogDirectory string   `mapstructure:"log_directory"`
+	SerfPort     int      `mapstructure:"serf_port"`
+	RPCPort      int      `mapstructure:"rpc_port"`
+	GatewayPort  int      `mapstructure:"gateway_port"`
+	Latitude     float64  `mapstructure:"latitude"`
+	Longitude    float64  `mapstructure:"longitude"`
 }
 
 var (
