@@ -14,10 +14,10 @@ servers:
   - node_name: "server1"
     bootstrap: true
     join_addr: null
-    address: 127.100.100.100
+    address: 127.0.0.1
     log_directory: "data/server1"
     serf_port: 8400
-    rpc_port: 50051
+    rpc_port: 50050
     gateway_port: 8080
     latitude: 45.404476
     longitude: -71.888351
@@ -25,23 +25,23 @@ servers:
   - node_name: "server2"
     bootstrap: false
     join_addr:
-      - "127.100.100.100:8400"
-    address: 127.200.200.1
+      - "127.0.0.1:8400"
+    address: 127.0.0.1
     log_directory: "data/server2"
     serf_port: 8401
-    rpc_port: 50052
-    gateway_port: 8080
+    rpc_port: 50051
+    gateway_port: 8081
     latitude: 45.508888
     longitude: -73.561668
 
   - node_name: "server3"
     bootstrap: false
     join_addr:
-      - "127.100.100.100:8400"
-    address: 127.255.255.0
+      - "127.0.0.1:8400"
+    address: 127.0.0.1
     log_directory: "data/server3"
     serf_port: 8402
-    rpc_port: 50053
-    gateway_port: 8080
+    rpc_port: 50052
+    gateway_port: 8082
     latitude: 46.829853
     longitude: -71.254028

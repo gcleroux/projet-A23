@@ -79,7 +79,8 @@ func TestMultipleNodes(t *testing.T) {
 		}, 500*time.Millisecond, 50*time.Millisecond)
 	}
 
-	servers, err := logs[0].GetServers()
+	req := &api.GetServersRequest{Latitude: 0.0, Longitude: 0.0, Radius: 1000.0}
+	servers, err := logs[0].GetServers(req)
 	require.NoError(t, err)
 	require.Equal(t, 3, len(servers))
 	require.True(t, servers[0].IsLeader)
@@ -91,7 +92,7 @@ func TestMultipleNodes(t *testing.T) {
 
 	time.Sleep(50 * time.Millisecond)
 
-	servers, err = logs[0].GetServers()
+	servers, err = logs[0].GetServers(req)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(servers))
 	require.True(t, servers[0].IsLeader)

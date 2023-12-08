@@ -11,7 +11,6 @@ import (
 
 	api "github.com/gcleroux/projet-A23/api/v1"
 	"github.com/gcleroux/projet-A23/src/config"
-	"github.com/gcleroux/projet-A23/src/loadbalance"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -129,11 +128,7 @@ func client(t *testing.T, agent *Agent, tlsConfig *tls.Config) api.LogClient {
 	rpcAddr, err := agent.Config.RPCAddr()
 	require.NoError(t, err)
 
-	conn, err := grpc.Dial(fmt.Sprintf(
-		"%s:///%s",
-		loadbalance.Name,
-		rpcAddr,
-	), opts...)
+	conn, err := grpc.Dial(rpcAddr, opts...)
 	require.NoError(t, err)
 
 	client := api.NewLogClient(conn)

@@ -79,16 +79,6 @@ func GenCert() error {
 	if err := os.MkdirAll(CONFIG_PATH, os.ModePerm); err != nil {
 		return err
 	}
-
-	conf, err := os.ReadDir(CONFIG_PATH)
-	if err != nil {
-		return err
-	}
-	if len(conf) != 0 {
-		fmt.Println("Skipping genCert... `.config/` is not empty")
-		return nil
-	}
-
 	fmt.Println("Generating Certs...")
 	if err := genCACert(); err != nil {
 		return err
