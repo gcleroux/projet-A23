@@ -113,7 +113,7 @@ func run() error {
 			return err
 		}
 
-		go http.ListenAndServe(fmt.Sprintf(":%d", s.GatewayPort), mux)
+		go http.ListenAndServe(fmt.Sprintf("%s:%d", s.Address, s.GatewayPort), mux)
 		teardown = append(teardown, fn, agent.Shutdown)
 	}
 
