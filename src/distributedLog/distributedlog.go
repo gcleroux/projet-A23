@@ -17,9 +17,10 @@ import (
 )
 
 type DistributedLog struct {
-	config Config
-	log    *log.Log
-	raft   *raft.Raft
+	config   Config
+	log      *log.Log
+	raft     *raft.Raft
+	logStore *logStore
 }
 
 func NewDistributedLog(dataDir string, config Config) (*DistributedLog, error) {
@@ -62,6 +63,7 @@ func (l *DistributedLog) setupRaft(dataDir string) error {
 	if err != nil {
 		return err
 	}
+	l.logStore = logStore
 
 	stableStore, err := raftboltdb.NewBoltStore(
 		filepath.Join(dataDir, "raft", "stable"),
@@ -229,7 +231,10 @@ func (l *DistributedLog) Close() error {
 	if err := f.Error(); err != nil {
 		return err
 	}
-	return l.log.Close()
+	if err := l.log.Close(); err != nil {
+		return err
+	}
+	return l.logStore.Close()
 }
 
 func (l *DistributedLog) GetLeader() (raft.ServerAddress, raft.ServerID) {
@@ -241,6 +246,7 @@ func (l *DistributedLog) GetServers(req *api.GetServersRequest) ([]*api.Server, 
 	if err := future.Error(); err != nil {
 		return nil, err
 	}
+	fmt.Println(l.config.Servers)
 	var servers []*api.Server
 	for _, server := range future.Configuration().Servers {
 		id := string(server.ID)

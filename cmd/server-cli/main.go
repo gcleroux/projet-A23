@@ -92,17 +92,15 @@ func run() error {
 			ServerTLSConfig: serverTLSConfig,
 			PeerTLSConfig:   peerTLSConfig,
 		}
-		if s.Bootstrap {
-			serverInfo := make(map[string]dlog.ServerInfo)
-			for _, s := range conf.Servers {
-				serverInfo[s.NodeName] = dlog.ServerInfo{
-					s.Latitude,
-					s.Longitude,
-					s.GatewayPort,
-				}
+		serverInfo := make(map[string]dlog.ServerInfo)
+		for _, si := range conf.Servers {
+			serverInfo[si.NodeName] = dlog.ServerInfo{
+				Latitude:    si.Latitude,
+				Longitude:   si.Longitude,
+				GatewayPort: si.GatewayPort,
 			}
-			c.ServerInfo = serverInfo
 		}
+		c.ServerInfo = serverInfo
 
 		agent, err := agent.New(c)
 		if err != nil {
